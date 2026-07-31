@@ -1,2 +1,6 @@
 docs/*
-.env
+backend/.env
+backend/venv
+backend/app/__pycache__
+backend/app/core/__pycache__
+backend/app/db/__pycache__
