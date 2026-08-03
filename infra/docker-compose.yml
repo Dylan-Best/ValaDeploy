@@ -1,0 +1,46 @@
+name: valadeploy
+services:
+
+  # --- TRAEFIK REVERSE PROXY ---
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "8080:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-network
+
+  # --- POSTGRESQL DATABASE ---
+  db:
+    image: postgres:15-alpine
+    env_file:
+      - ../backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # --- PYTHON WEB APPLICATION ---
+  app:
+    build: ../backend
+    env_file:
+      - ../backend/.env
+    depends_on:
+      - db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`app.localhost`)"
+      - "traefik.http.services.web.loadbalancer.server.port=8000"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
