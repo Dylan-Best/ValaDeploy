@@ -1,5 +1,8 @@
 FROM python:3.11-slim
 
+ARG DOCKER_GID=999
+
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -19,6 +22,10 @@ EXPOSE 8000
 
 # Create and switch to a non-privileged user for security
 RUN useradd --create-home appuser && chown -R appuser /app
+
+# add the user to the docker group to allow access to the Docker socket
+RUN groupadd -g $DOCKER_GID docker && usermod -aG docker appuser
+
 USER appuser
 
 # Define the command to execute your application

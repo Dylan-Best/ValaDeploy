@@ -27,7 +27,10 @@ services:
 
   # --- PYTHON WEB APPLICATION ---
   app:
-    build: ../backend
+    build: 
+      context: ../backend
+      args:
+        DOCKER_GID: 999 # besoin de context
     env_file:
       - ../backend/.env
     depends_on:
@@ -38,6 +41,8 @@ services:
       - "traefik.http.services.web.loadbalancer.server.port=8000"
     networks:
       - app-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   postgres_data:

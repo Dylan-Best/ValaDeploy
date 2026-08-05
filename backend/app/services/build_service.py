@@ -1,6 +1,8 @@
 from enum import Enum
 import os
 from pathlib import Path
+import docker
+from app.core.docker_client import client
 
 class ProjectType(str, Enum):
     DOCKERFILE = "dockerfile"
@@ -89,3 +91,31 @@ def generate_dockerfile(project_type: ProjectType, project_path: str):
     with open(dockerfile_path, 'w') as dockerfile:
         dockerfile.write(template_content)
     return {"dockerfile_path": str(dockerfile_path)}
+
+
+def build_docker_image(project_path: str, slug: str, commit_hash: str):
+    """
+    Build a Docker image for the given project.
+
+    Args:
+        project_path (str): The path to the project directory.
+        slug (str): The slug for the project.
+        commit_hash (str): The commit hash for the project.
+    """
+    # Generate a short commit hash (first 7 characters)
+    short_commit_hash = commit_hash[:7]
+    # Construct the image tag
+    image_tag = f"{slug}:{short_commit_hash}"
+
+    try:
+        # Build the Docker image using the Docker client
+        build_result = client.images.build(path=project_path, tag=image_tag)
+        build_logs = build_result[1]
+        for log in build_logs:
+            if 'stream' in log:
+                print(log['stream'].strip())
+                
+    except docker.errors.BuildError as e:
+        raise ValueError(f"Failed to build Docker image: {e}")
+
+    return image_tag
