@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     APP_NETWORK: str
     APP_DOMAIN: str
     APP_PORT: int
+    ENCRYPTION_KEY: str
     POSTGRES_DB: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int
