@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     APP_NAME: str
     APP_NETWORK: str
+    APP_DOMAIN: str
+    APP_PORT: int
     POSTGRES_DB: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int

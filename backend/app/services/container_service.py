@@ -1,7 +1,8 @@
 from app.core.docker_client import client
+from app.services.traefik_service import build_traefik_labels
 import docker
 
-def run_container(image_name, slug , network:str):
+def run_container(image_name : str, slug : str , network: str):
     """
     Run a Docker container with the specified image name, slug, and network.
 
@@ -30,10 +31,12 @@ def run_container(image_name, slug , network:str):
     except docker.errors.APIError as e:
         raise ValueError(f"Error occurred while running container: {e}")
         # Container not found, proceed with creating it
+    traefik_labels = build_traefik_labels(slug) 
     container = client.containers.run(
         image=image_name,
         name=slug,
         network=network,
+        labels=traefik_labels,
         detach=True
     )
         
