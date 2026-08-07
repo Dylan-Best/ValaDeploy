@@ -55,6 +55,7 @@ def generate_dockerfile(project_type: ProjectType, project_path: str):
 
     Raises:
         ValueError: If the project type is unknown or if the template file does not exist.
+
     """
     # Define a mapping of project types to template file names
     template_files = {
@@ -101,6 +102,10 @@ def build_docker_image(project_path: str, slug: str, commit_hash: str):
         project_path (str): The path to the project directory.
         slug (str): The slug for the project.
         commit_hash (str): The commit hash for the project.
+    
+    
+    Returns:
+        str: The name of the built Docker image.
     """
     # Generate a short commit hash (first 7 characters)
     short_commit_hash = commit_hash[:7]
