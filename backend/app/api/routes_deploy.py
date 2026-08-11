@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.deploy import CloneSchema
 from app.services.git_service import clone_repository
 from app.services.build_service import detect_project_type, generate_dockerfile, build_docker_image
-from app.services.container_service import run_container
+from app.services.container_service import scale_project
 from app.core.config import settings
 
 router = APIRouter()
@@ -15,12 +15,12 @@ async def clone(payload: CloneSchema):
         detect_result = detect_project_type(destination_path)
         dockerfile_result = generate_dockerfile(detect_result, destination_path)
         build_result = build_docker_image(destination_path, payload.slug, clone_result["commit_hash"])
-        container_id = run_container(build_result, payload.slug, settings.APP_NETWORK)
+        container_ids = scale_project(build_result, payload.slug, settings.APP_NETWORK, payload.replica, payload.envs_var)
         return {"clone_result": clone_result, 
                 "detect_result": detect_result, 
                 "dockerfile_path": dockerfile_result["dockerfile_path"],
                 "build_result": build_result,
-                "container_id": container_id
+                "container_ids": container_ids
                 }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
