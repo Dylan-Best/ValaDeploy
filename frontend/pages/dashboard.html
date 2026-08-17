@@ -1,0 +1,182 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ValaDeploy Dashboard</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="../styles/dashboard.tailwind.config.js"></script>
+<link href="../styles/dashboard.css" rel="stylesheet">
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="projects">
+<!-- Shared Component: SideNavBar -->
+<div data-component="../components/sidebar.html"></div>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
+<div class="max-w-max-width mx-auto px-margin-desktop py-xl">
+<!-- Page Header -->
+<header class="flex justify-between items-center mb-xl">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Projects</h1>
+<p class="font-body-sm text-body-sm text-secondary mt-xs">Manage and monitor your deployments.</p>
+</div>
+<button class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Project
+                </button>
+</header>
+<!-- Statistics Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
+<!-- Stat Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[18px]">folder</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Total Projects</span>
+</div>
+<div class="font-display text-display text-on-surface">12</div>
+</div>
+<!-- Stat Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[18px]">radar</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Critical Vulnerabilities</span>
+</div>
+<div class="font-display text-display text-error">4</div>
+</div>
+<!-- Stat Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Running Containers</span>
+</div>
+<div class="font-display text-display text-on-surface">7</div>
+</div>
+</section>
+<!-- Project List Table -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+<div class="w-full overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-low">
+<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Project</th>
+<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Status</th>
+<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Commit</th>
+<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Replicas</th>
+<th class="py-md px-lg text-right"></th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant" id="projects-table-body">
+<!-- Row 1 : running -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-md px-lg">
+<div class="font-mono-code text-mono-code font-medium">auth-service</div>
+<div class="font-body-sm text-body-sm text-secondary">auth-service.192-168-1-10.sslip.io</div>
+</td>
+<td class="py-md px-lg">
+<div class="status-badge status-running">
+<div class="status-dot"></div>
+<span class="font-label-sm text-label-sm">Running</span>
+</div>
+</td>
+<td class="py-md px-lg font-mono-code text-mono-code text-secondary">db0af14</td>
+<td class="py-md px-lg text-secondary">2</td>
+<td class="py-md px-lg text-right">
+<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 : building -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-md px-lg">
+<div class="font-mono-code text-mono-code font-medium">payment-gateway</div>
+<div class="font-body-sm text-body-sm text-secondary">payment-gateway.192-168-1-10.sslip.io</div>
+</td>
+<td class="py-md px-lg">
+<div class="status-badge status-building">
+<div class="status-dot"></div>
+<span class="font-label-sm text-label-sm">Building</span>
+</div>
+</td>
+<td class="py-md px-lg font-mono-code text-mono-code text-secondary">7a2c9e1</td>
+<td class="py-md px-lg text-secondary">1</td>
+<td class="py-md px-lg text-right">
+<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 : error -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-md px-lg">
+<div class="font-mono-code text-mono-code font-medium">billing-worker</div>
+<div class="font-body-sm text-body-sm text-secondary">billing-worker.192-168-1-10.sslip.io</div>
+</td>
+<td class="py-md px-lg">
+<div class="status-badge status-error">
+<div class="status-dot"></div>
+<span class="font-label-sm text-label-sm">Error</span>
+</div>
+</td>
+<td class="py-md px-lg font-mono-code text-mono-code text-secondary">f3e8b02</td>
+<td class="py-md px-lg text-secondary">0</td>
+<td class="py-md px-lg text-right">
+<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 : stopped -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-md px-lg">
+<div class="font-mono-code text-mono-code font-medium text-secondary">frontend-app</div>
+<div class="font-body-sm text-body-sm text-secondary">frontend-app.192-168-1-10.sslip.io</div>
+</td>
+<td class="py-md px-lg">
+<div class="status-badge status-stopped">
+<div class="status-dot"></div>
+<span class="font-label-sm text-label-sm text-secondary">Stopped</span>
+</div>
+</td>
+<td class="py-md px-lg font-mono-code text-mono-code text-secondary">c19d044</td>
+<td class="py-md px-lg text-secondary">0</td>
+<td class="py-md px-lg text-right">
+<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 : created (jamais encore déployé) -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-md px-lg">
+<div class="font-mono-code text-mono-code font-medium text-secondary">notif-service</div>
+<div class="font-body-sm text-body-sm text-secondary">not yet deployed</div>
+</td>
+<td class="py-md px-lg">
+<div class="status-badge status-created">
+<div class="status-dot"></div>
+<span class="font-label-sm text-label-sm text-secondary">Created</span>
+</div>
+</td>
+<td class="py-md px-lg font-mono-code text-mono-code text-secondary">—</td>
+<td class="py-md px-lg text-secondary">—</td>
+<td class="py-md px-lg text-right">
+<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+<script src="../scripts/components.js"></script>
+<script src="../scripts/dashboard.js"></script>
+</body></html>

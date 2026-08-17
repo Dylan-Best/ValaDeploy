@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings
+
 
 """ 
 Regroupe tout ce qui est persistance de données (base de données, cache, etc.) dans un seul module.
@@ -19,3 +20,6 @@ def get_db():
         yield db
     finally:
         db.close()
+        
+class Base(DeclarativeBase):
+    pass

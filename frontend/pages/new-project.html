@@ -1,0 +1,84 @@
+<!DOCTYPE html><html class="h-full" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ValaDeploy - New Project</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<script src="../styles/new-project.tailwind.config.js"></script>
+<link href="../styles/new-project.css" rel="stylesheet">
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="projects">
+<!-- Shared Component: SideNavBar (identique au Dashboard) -->
+<div data-component="../components/sidebar.html"></div>
+<!-- Main Content Area -->
+<main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
+<div class="w-full max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop py-xl md:py-xxl">
+<div class="mb-xl">
+<a class="inline-flex items-center gap-xs text-on-surface-variant hover:text-on-surface font-body-sm text-body-sm mb-md transition-colors" href="dashboard.html">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_back">arrow_back</span>
+                    Back to Projects
+                </a>
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-xs">New Project</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure and deploy a new environment.</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg md:p-xl">
+<form class="space-y-lg">
+<!-- Project Name -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="projectName">Project Name</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant focus:border-on-surface focus:ring-0 rounded-lg px-md py-sm font-body-sm text-body-sm text-on-surface placeholder-on-surface-variant/50 transition-colors" id="projectName" name="projectName" placeholder="e.g. acme-web-production" type="text">
+<p class="mt-xs font-body-sm text-body-sm text-on-surface-variant">
+                    Will be reachable at <span id="slug-preview" class="text-on-surface">your-project.&lt;server-ip&gt;.sslip.io</span>
+                </p>
+</div>
+<!-- Git Repository + Branch -->
+<div class="flex flex-col md:flex-row gap-md">
+<div class="flex-1">
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="gitUrl">Git Repository URL</label>
+<div class="flex rounded-lg shadow-sm border border-outline-variant focus-within:border-on-surface transition-colors">
+<span class="inline-flex items-center px-md rounded-l-lg border-r border-outline-variant bg-surface-container-low text-on-surface-variant sm:text-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="code">code</span>
+</span>
+<input class="flex-1 block w-full min-w-0 rounded-none rounded-r-lg bg-transparent px-md py-sm font-body-sm text-body-sm text-on-surface border-0 focus:ring-0 placeholder-on-surface-variant/50" id="gitUrl" name="gitUrl" placeholder="github.com/user/repo" type="text">
+</div>
+</div>
+<div class="md:w-40">
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="branch">Branch</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant focus:border-on-surface focus:ring-0 rounded-lg px-md py-sm font-mono-code text-body-sm text-on-surface placeholder-on-surface-variant/50 transition-colors" id="branch" name="branch" placeholder="main" type="text" value="main">
+</div>
+</div>
+<!-- Replicas -->
+<div class="md:w-40">
+<label class="block font-label-md text-label-md text-on-surface mb-sm" for="replicas">Replicas</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant focus:border-on-surface focus:ring-0 rounded-lg px-md py-sm font-body-sm text-body-sm text-on-surface transition-colors" id="replicas" min="1" name="replicas" type="number" value="1">
+</div>
+<hr class="border-outline-variant my-lg">
+<!-- Environment Variables -->
+<div>
+<div class="flex justify-between items-end mb-sm">
+<label class="block font-label-md text-label-md text-on-surface">Environment Variables</label>
+</div>
+<div class="space-y-sm" id="env-vars-container">
+<!-- Les lignes sont ajoutées dynamiquement par scripts/new-project.js -->
+</div>
+<button class="flex items-center gap-xs text-primary font-label-md text-label-md hover:opacity-80 transition-all mt-sm" id="add-env-var" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+        Add Variable
+    </button>
+</div>
+<!-- Action Buttons -->
+<div class="pt-lg flex items-center justify-end gap-md">
+<a class="font-label-md text-label-md text-[#667085] hover:text-[#000000] transition-colors" href="dashboard.html">Cancel</a>
+<button class="bg-primary-container text-on-primary hover:bg-[#e65300] font-label-md text-label-md px-lg py-sm rounded-lg transition-colors flex items-center gap-sm" type="submit">
+<span class="material-symbols-outlined text-[18px]" data-icon="rocket_launch">rocket_launch</span>
+                            Deploy Project
+                        </button>
+</div>
+</form>
+</div>
+</div>
+</main>
+<script src="../scripts/components.js"></script>
+<script src="../scripts/new-project.js"></script>
+</body></html>
