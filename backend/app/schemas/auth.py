@@ -12,7 +12,8 @@ class UserRegisterSchema(BaseModel):
         if self.password != self.confirm_password :
             raise ValueError("Passwords do not match")
         return self 
-    
+
+# converti un objet SQLALchemy User en response 
 class UserResponseSchema(BaseModel):
     id : int
     full_name : str 
@@ -21,4 +22,9 @@ class UserResponseSchema(BaseModel):
     is_active : bool 
     created_at : datetime
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True) 
+    
+class LoginSchema(BaseModel):
+    email : EmailStr
+    password : str 
+
