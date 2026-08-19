@@ -2,6 +2,8 @@
 // Pour l'instant : validation côté client que les 2 mots de passe correspondent.
 // À compléter plus tard : soumission du formulaire vers l'API de création de compte.
 
+const registerUser = require('./api/auth');
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('form');
     const password = document.getElementById('password');
@@ -18,6 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             errorMessage.classList.remove('visible');
             // TODO: appel API register (voir scripts/api/auth.js à venir)
+            registerUser(username, email, password)
+                .then(response => {
+                    console.log('Registration successful:', response.data);
+                    // Rediriger l'utilisateur vers une page de confirmation ou un message de succès
+                })
+                .catch(error => {
+                    console.error('Registration failed:', error);
+                    // Afficher un message d'erreur à l'utilisateur
+                });
+
         }
     });
 
