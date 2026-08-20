@@ -1,3 +1,22 @@
-// Comportement de la page login — à compléter (soumission du formulaire vers l'API d'authentification).
-// Aucune logique dans la maquette d'origine ; fichier créé pour respecter la convention
-// "un fichier JS par page", prêt à être rempli lors de l'intégration backend.
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+
+  if (!form || !password ) return;
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault(); 
+
+      loginUser(email.value, password.value)
+        .then(data => {
+          console.log('Login successful:', data);
+          window.location.href = "dashboard.html";
+        })
+        .catch(error => {
+          alert(error.message)
+          // TODO: afficher un message d'erreur à l'utilisateur
+        });
+  });
+
+});

@@ -23,7 +23,7 @@ class User(Base):
         nullable=False, 
         server_default=text("'dev'"))
     is_active: Mapped[bool] = mapped_column(server_default=text("true"), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
     
 class RefreshToken(Base):
@@ -39,7 +39,7 @@ class RefreshToken(Base):
     revoked: Mapped[bool] = mapped_column(
         Boolean, server_default=text("false"), nullable=False
     )
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
