@@ -1,0 +1,37 @@
+<!-- components/confirm-modal.html
+     Composant de confirmation réutilisable.
+     Se pilote uniquement via JS : ValaModal.confirm({ ... })
+     Voir js/confirm-modal.js pour l'API. -->
+<div id="vala-modal-overlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-[1px] px-md" aria-hidden="true">
+    <div id="vala-modal-card"
+         class="bg-surface-container-lowest border border-subtle rounded-lg shadow-xl w-full max-w-sm p-lg opacity-0 scale-95 transition-all duration-150"
+         role="dialog" aria-modal="true" aria-labelledby="vala-modal-title">
+
+        <!-- Icône -->
+        <div id="vala-modal-icon-wrap" class="w-11 h-11 rounded-full flex items-center justify-center mb-md bg-error-container/30">
+            <span id="vala-modal-icon" class="material-symbols-outlined text-danger-red" style="font-size: 22px;">warning</span>
+        </div>
+
+        <!-- Titre -->
+        <h3 id="vala-modal-title" class="font-label-md text-headline-md text-primary-dark mb-xs" style="font-size:18px; line-height:24px;">
+            Confirmer l'action
+        </h3>
+
+        <!-- Message -->
+        <p id="vala-modal-message" class="font-body-sm text-body-sm text-subtle mb-lg">
+            Êtes-vous sûr de vouloir continuer ?
+        </p>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-sm">
+            <button id="vala-modal-cancel" type="button"
+                    class="bg-white border border-subtle text-primary-dark font-label-md text-label-md px-lg py-sm rounded-DEFAULT hover:bg-surface-variant transition-colors">
+                Annuler
+            </button>
+            <button id="vala-modal-confirm" type="button"
+                    class="bg-danger-red text-white font-label-md text-label-md px-lg py-sm rounded-DEFAULT hover:opacity-90 transition-opacity">
+                Confirmer
+            </button>
+        </div>
+    </div>
+</div>

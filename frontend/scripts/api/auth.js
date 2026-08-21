@@ -20,6 +20,19 @@ function extractErrorMessage(errorBody) {
   return "Une erreur est survenue.";
 }
 
+// Fonction commune : transforme une réponse fetch en JSON,
+// ou lance une erreur (avec le status HTTP attaché) si ça a échoué
+function handleResponse(response) {
+  if (!response.ok) {
+    return response.json().then(errorBody => {
+      const error = new Error(extractErrorMessage(errorBody));
+      error.status = response.status; // utile pour le code de refresh token
+      throw error;
+    });
+  }
+  return response.json();
+}
+
 function registerUser(fullname, email, password, confirmPassword) {
   return fetch("http://app.localhost:8080/auth/register", {
     method: "POST",
@@ -32,15 +45,8 @@ function registerUser(fullname, email, password, confirmPassword) {
         password: password, 
         confirm_password: confirmPassword }) 
   })
-    .then(response => {
-      if (!response.ok) {
-        // on lit le body maintenant, PENDANT qu'on peut encore le faire
-        return response.json().then(errorBody => {
-          throw new Error(extractErrorMessage(errorBody));
-        });
-      }
-      return response.json();
-    }) // reponse http brute pas le corps
+    .then(handleResponse)
+   // reponse http brute pas le corps
     .then(data => data);
 }
 
@@ -52,13 +58,25 @@ function loginUser(email, password) {
     credentials: "include", // indispensable pour que le cookie refresh_token soit accepté/stocké
     body: JSON.stringify({ email, password })
   })
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(errorBody => {
-          throw new Error(extractErrorMessage(errorBody));
-        });
-      }
-      return response.json();
-    })
+    .then(handleResponse)
     .then(data => data);
+}
+
+
+function refreshAccessToken() {
+  return fetch("http://app.localhost:8080/auth/refresh", {
+    method: "POST",
+    credentials: "include"
+  })
+    .then(handleResponse);
+}
+
+function getCurrentUser(accessToken) {
+  return fetch("http://app.localhost:8080/auth/me", {
+    method: "GET",
+    headers: {
+      "Authorization": "Bearer " + accessToken // n'utilise pas le cookies, mais le header(convention)
+    }
+  })
+    .then(handleResponse);
 }

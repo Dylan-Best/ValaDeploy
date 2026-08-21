@@ -5,17 +5,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const password = document.getElementById('password');
   const confirmPassword = document.getElementById('confirm-password');
   const errorMessage = document.getElementById('password-mismatch-error');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const originalButtonText = submitButton.textContent;
 
   if (!form || !password || !confirmPassword || !errorMessage) return;
 
   form.addEventListener('submit', (event) => {
-    event.preventDefault(); // on bloque TOUJOURS le rechargement natif, dès le départ
+    event.preventDefault();
 
     if (password.value !== confirmPassword.value) {
       errorMessage.classList.add('visible');
       confirmPassword.focus();
     } else {
       errorMessage.classList.remove('visible');
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Creating account...";
 
       registerUser(username.value, email.value, password.value, confirmPassword.value)
         .then(data => {
@@ -24,7 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
           alert(error.message);
-          // TODO: afficher un message d'erreur à l'utilisateur
+          submitButton.disabled = false;
+          submitButton.textContent = originalButtonText;
         });
     }
   });
@@ -35,6 +41,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-
-
-

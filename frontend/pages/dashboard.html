@@ -25,10 +25,15 @@
 <h1 class="font-headline-lg text-headline-lg text-on-surface">Projects</h1>
 <p class="font-body-sm text-body-sm text-secondary mt-xs">Manage and monitor your deployments.</p>
 </div>
+
+<div class="flex items-center gap-lg">
+    <!-- champ pour le nom -->>
+<span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
 <button class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
 <span class="material-symbols-outlined text-[18px]">add</span>
                     New Project
                 </button>
+</div>
 </header>
 <!-- Statistics Grid -->
 <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
@@ -177,6 +182,7 @@
 </section>
 </div>
 </main>
+<script src="../scripts/api/auth.js"></script>
 <script src="../scripts/components.js"></script>
 <script src="../scripts/dashboard.js"></script>
 </body></html>

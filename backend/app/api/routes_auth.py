@@ -88,12 +88,11 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 
     return {"message": "Logged out"}
 
-
-# ========= TEST =================
 @router.get("/me", response_model=UserResponseSchema)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+# ========= TEST =================
 @router.get("/admin-test")
 def admin_test(
     current_user: User = Depends(require_admin),
