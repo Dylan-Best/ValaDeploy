@@ -80,3 +80,52 @@ function getCurrentUser(accessToken) {
   })
     .then(handleResponse);
 }
+
+function logoutUser() {
+  return fetch("http://app.localhost:8080/auth/logout", {
+    method: "POST",
+    credentials: "include"
+  }).then(handleResponse);
+}
+
+let currentAccessToken = null;
+
+// Décode le "payload" (2e partie) d'un JWT, sans vérifier sa signature
+// (on n'a pas besoin de vérifier : c'est le rôle du backend, ici on veut juste LIRE des infos, comme "exp")
+function decodeJwt(token) {
+  const payloadBase64Url = token.split('.')[1];
+  const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const payloadJson = atob(payloadBase64); // atob = décode du base64 en texte
+  return JSON.parse(payloadJson);
+}
+
+// Enveloppe un appel API : si le token est invalide/expiré (401), rafraîchit et réessaie une fois
+function fetchWithAutoRefresh(apiCallFn) {
+  return apiCallFn(currentAccessToken)
+    .catch(error => {
+      if (error.status === 401) {
+        return refreshAccessToken().then(data => {
+          currentAccessToken = data.access_token;
+          return apiCallFn(currentAccessToken);
+        });
+      }
+      throw error;
+    });
+}
+
+// Point d'entrée commun à toute page qui a besoin de connaître l'utilisateur connecté.
+// onSuccess(user, accessToken) est appelé si tout va bien.
+// onFailure(error) est appelé si la session est invalide (à toi de rediriger vers login.html dedans).
+function initUserSession(onSuccess, onFailure) {
+  refreshAccessToken()
+    .then(data => {
+      currentAccessToken = data.access_token;
+      return fetchWithAutoRefresh(getCurrentUser);
+    })
+    .then(user => {
+      onSuccess(user, currentAccessToken);
+    })
+    .catch(error => {
+      onFailure(error);
+    });
+}

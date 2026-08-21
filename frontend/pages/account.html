@@ -40,8 +40,8 @@
                     <div class="px-lg py-md border-b border-subtle flex justify-between items-center">
                         <h3 class="font-label-md text-label-md text-primary-dark">Profile Information</h3>
                         <div class="bg-surface-container-highest px-sm py-xs rounded-DEFAULT font-label-sm text-label-sm text-primary-dark flex items-center gap-xs">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">admin_panel_settings</span>
-                            Admin
+                            <span class="material-symbols-outlined" style="font-size: 14px;" >admin_panel_settings</span>
+                            <span id="profile-role">Admin</span>
                         </div>
                     </div>
                     <div class="p-lg flex flex-col sm:flex-row gap-lg items-start">
@@ -51,11 +51,11 @@
                         <div class="flex-1 flex flex-col gap-md w-full">
                             <div>
                                 <label class="font-label-sm text-label-sm text-subtle block mb-xs">Full Name</label>
-                                <div class="font-body-md text-body-md text-primary-dark pb-xs border-b border-subtle">Jean-Luc Vala</div>
+                                <div class="font-body-md text-body-md text-primary-dark pb-xs border-b border-subtle" id="profile-fullname">Jean-Luc Vala</div>
                             </div>
                             <div>
                                 <label class="font-label-sm text-label-sm text-subtle block mb-xs">Email Address</label>
-                                <div class="font-body-md text-body-md text-primary-dark pb-xs border-b border-subtle">jl.vala@company.com</div>
+                                <div class="font-body-md text-body-md text-primary-dark pb-xs border-b border-subtle" id="profile-email">jl.vala@company.com</div>
                             </div>
                         </div>
                     </div>
@@ -102,7 +102,7 @@
                             <div class="w-2 h-2 rounded-full dot-success animate-pulse"></div>
                             <span class="font-label-sm text-label-sm">Active</span>
                         </div>
-                        <span class="font-body-sm text-body-sm text-subtle">Expires in 4 hours</span>
+                        <span class="font-body-sm text-body-sm text-subtle" id="session-expiry-text">Expires in 4 hours</span>
                     </div>
                 </section>
 
@@ -118,7 +118,7 @@
                         <p class="font-body-sm text-body-sm text-subtle mb-sm">These actions are destructive and cannot be easily reversed.</p>
                         <button id="btn-logout-everywhere" class="w-full bg-white border border-subtle text-primary-dark font-label-md text-label-md py-sm rounded-DEFAULT flex items-center justify-center gap-sm hover:bg-surface-variant transition-colors">
                             <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
-                            Logout Everywhere
+                            Logout
                         </button>
                         <button id="btn-delete-account" class="w-full bg-white border border-error text-danger-red font-label-md text-label-md py-sm rounded-DEFAULT flex items-center justify-center gap-sm hover:bg-error-container/30 transition-colors mt-sm">
                             <span class="material-symbols-outlined" style="font-size: 18px;">delete_forever</span>
@@ -136,8 +136,10 @@
 <div data-component="../components/confirm-modal.html"></div>
 
 <!-- Script de chargement des composants -->
+
 <script src="../scripts/components.js"></script>
 <script src="../scripts/confirm-modal.js"></script>
+<script src="../scripts/api/auth.js"></script>
 <script src="../scripts/account.js"></script>
 </body>
 </html>
