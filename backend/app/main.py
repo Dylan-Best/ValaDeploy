@@ -5,16 +5,19 @@ from app.core.config import settings
 from app.api.routes_deploy import router as deploy_router
 from app.api.routes_logs import router as logs_router
 from app.api.routes_auth import router as auth_router
+from app.api.routes_projects import router as project_router
 
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Projet de memoire"
+    description="Projet de memoire",
 )
 
-app.include_router(deploy_router)
-app.include_router(logs_router)
-app.include_router(auth_router, prefix="/auth")
+
+app.include_router(deploy_router, prefix="/api")
+app.include_router(logs_router, prefix="/api")
+app.include_router(auth_router, prefix="/api/auth")
+app.include_router(project_router, prefix="/api")
 
 
 @app.get("/")

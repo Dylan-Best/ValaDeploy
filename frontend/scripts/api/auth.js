@@ -23,18 +23,40 @@ function extractErrorMessage(errorBody) {
 // Fonction commune : transforme une réponse fetch en JSON,
 // ou lance une erreur (avec le status HTTP attaché) si ça a échoué
 function handleResponse(response) {
-  if (!response.ok) {
-    return response.json().then(errorBody => {
-      const error = new Error(extractErrorMessage(errorBody));
-      error.status = response.status; // utile pour le code de refresh token
-      throw error;
+    if (!response.ok) {
+        // Lire la réponse en texte pour voir ce que c'est
+        return response.text().then(function(text) {
+            console.log('Réponse brute (erreur) :', text);
+            
+            // Essayer de parser en JSON si possible
+            try {
+                var errorBody = JSON.parse(text);
+                var error = new Error(extractErrorMessage(errorBody));
+                error.status = response.status;
+                throw error;
+            } catch (e) {
+                // Si ce n'est pas du JSON, utiliser le texte brut
+                var error = new Error(text || 'Erreur ' + response.status);
+                error.status = response.status;
+                throw error;
+            }
+        });
+    }
+    
+    // Pour les réponses OK, lire en texte d'abord pour debug
+    return response.text().then(function(text) {
+        console.log('Réponse brute (OK) :', text);
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('La réponse n\'est pas du JSON valide:', text);
+            throw new Error('Le serveur a renvoyé une réponse invalide: ' + text.substring(0, 100));
+        }
     });
-  }
-  return response.json();
 }
 
 function registerUser(fullname, email, password, confirmPassword) {
-  return fetch("http://app.localhost:8080/auth/register", {
+  return fetch("http://app.localhost:8080/api/auth/register", {
     method: "POST",
     headers: {
       "Content-Type": "application/json" // pour indiquer le type de donne a envoyer
@@ -52,7 +74,7 @@ function registerUser(fullname, email, password, confirmPassword) {
 
 
 function loginUser(email, password) {
-  return fetch("http://app.localhost:8080/auth/login", {
+  return fetch("http://app.localhost:8080/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include", // indispensable pour que le cookie refresh_token soit accepté/stocké
@@ -64,7 +86,7 @@ function loginUser(email, password) {
 
 
 function refreshAccessToken() {
-  return fetch("http://app.localhost:8080/auth/refresh", {
+  return fetch("http://app.localhost:8080/api/auth/refresh", {
     method: "POST",
     credentials: "include"
   })
@@ -72,7 +94,7 @@ function refreshAccessToken() {
 }
 
 function getCurrentUser(accessToken) {
-  return fetch("http://app.localhost:8080/auth/me", {
+  return fetch("http://app.localhost:8080/api/auth/me", {
     method: "GET",
     headers: {
       "Authorization": "Bearer " + accessToken // n'utilise pas le cookies, mais le header(convention)
@@ -82,7 +104,7 @@ function getCurrentUser(accessToken) {
 }
 
 function logoutUser() {
-  return fetch("http://app.localhost:8080/auth/logout", {
+  return fetch("http://app.localhost:8080/api/auth/logout", {
     method: "POST",
     credentials: "include"
   }).then(handleResponse);

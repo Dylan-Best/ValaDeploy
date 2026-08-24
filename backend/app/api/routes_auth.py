@@ -40,7 +40,7 @@ def login(user: LoginSchema, response: Response, db: Session = Depends(get_db)):
             secure=False,
             samesite="strict",   # protège du CSRF basique
             max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-            path="/auth",        # le cookie ne part que vers /auth/* (pas /projects, /me...)
+            path="/api/auth",        # le cookie ne part que vers /api/auth/* (pas /projects, /me...)
         )
 
         return {"access_token": access_token, "token_type": "bearer"}
@@ -70,7 +70,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
         secure=False, # en dev , remettre en https plus tard
         samesite="strict",
         max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-        path="/auth",
+        path="/api/auth",
     )
 
     return {"access_token": new_access_token, "token_type": "bearer"} 
@@ -84,7 +84,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
     logout_user(raw_token, db)
 
     # supprime le cookie côté navigateur
-    response.delete_cookie("refresh_token", path="/auth")
+    response.delete_cookie("refresh_token", path="/api/auth")
 
     return {"message": "Logged out"}
 

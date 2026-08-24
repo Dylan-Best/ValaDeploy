@@ -1,10 +1,23 @@
-// Comportement de la page New Project.
+// new-project.js
+// Gestion du formulaire de création de projet
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Vérifie la session avant d'afficher le formulaire.
+    // Réutilise getProjects() qui passe déjà par fetchWithAutoRefresh
+    // (donc essaie le refresh token avant d'abandonner).
+    try {
+        await getProjects();
+    } catch (err) {
+        console.warn('Session invalide, redirection vers login:', err);
+        window.location.href = 'login.html';
+        return; // stoppe l'exécution, n'initialise rien du formulaire
+    }
+
     setupSlugPreview();
     setupEnvVarRows();
     setupFormSubmit();
 });
+
 
 // --- Aperçu du sous-domaine (slug -> nom.ip-serveur.sslip.io), reflète RG-05 ---
 function slugify(text) {
@@ -62,6 +75,11 @@ function setupEnvVarRows() {
     const addButton = document.getElementById('add-env-var');
     if (!container || !addButton) return;
 
+    // Ajouter une ligne vide par défaut si le conteneur est vide
+    if (container.children.length === 0) {
+        container.appendChild(createEnvVarRow());
+    }
+
     addButton.addEventListener('click', () => {
         container.appendChild(createEnvVarRow());
     });
@@ -81,34 +99,71 @@ function collectEnvVars() {
 // --- Soumission du formulaire ---
 function setupFormSubmit() {
     const form = document.querySelector('form');
-    if (!form) return;
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    if (!form || !submitBtn) return;
 
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
+        // 1. Récupérer les données du formulaire
+        const projectName = document.getElementById('projectName')?.value.trim();
+        const gitUrl = document.getElementById('gitUrl')?.value.trim();
+        const branch = document.getElementById('branch')?.value.trim() || 'main';
+        const replicas = parseInt(document.getElementById('replicas')?.value, 10) || 1;
+
+        // 2. Validation basique
+        if (!projectName) {
+            alert('Le nom du projet est requis');
+            return;
+        }
+        if (!gitUrl) {
+            alert('L\'URL du dépôt Git est requise');
+            return;
+        }
+
+        // 3. Construire le payload
         const payload = {
-            slug: slugify(document.getElementById('projectName').value),
-            repo_url: document.getElementById('gitUrl').value.trim(),
-            branch: document.getElementById('branch').value.trim() || 'main',
-            replica: parseInt(document.getElementById('replicas').value, 10) || 1,
+            slug: slugify(projectName),
+            repo_url: gitUrl,
+            branch: branch,
+            replica: replicas,
             envs_var: collectEnvVars(),
         };
 
-        // TODO (intégration backend) :
-        // - envs_var contient actuellement des valeurs EN CLAIR.
-        //   Le backend attend des valeurs déjà chiffrées (Fernet) dans /clone.
-        //   Le chiffrement ne doit jamais se faire côté client (la clé Fernet
-        //   ne doit pas être exposée au navigateur) : soit le backend accepte
-        //   du clair et chiffre lui-même à la création, soit prévoir un
-        //   endpoint dédié. À trancher avec le backend avant de brancher ce fetch.
-        //
-        // - Appel réel à prévoir ici, ex:
-        //   const res = await fetch(`${API_BASE_URL}/clone`, {
-        //       method: 'POST',
-        //       headers: { 'Content-Type': 'application/json' },
-        //       body: JSON.stringify(payload),
-        //   });
+        console.log('Payload prêt pour /deploy :', payload);
 
-        console.log('Payload prêt pour /clone (envs_var non chiffrés, voir TODO) :', payload);
+        // 4. Sauvegarder le texte original du bouton pour le restaurer
+        const originalText = submitBtn.innerHTML;
+
+        // 5. Désactiver le bouton pendant l'appel
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+            Déploiement en cours...
+        `;
+
+        try {
+            // 6. Appeler l'API de création (createProject est dans projects.js)
+            const result = await createProject(payload);
+            console.log('Projet créé avec succès:', result);
+
+            // 7. Rediriger vers le dashboard
+            window.location.href = 'dashboard.html';
+
+        } catch (error) {
+            console.error('Erreur lors du déploiement:', error);
+
+            // Afficher une erreur plus parlante
+            let errorMessage = 'Une erreur est survenue lors du déploiement.';
+            if (error.message) {
+                // Si l'erreur vient du backend, elle est déjà formatée
+                errorMessage = error.message;
+            }
+            alert(`${errorMessage}`);
+
+            // 8. Réactiver le bouton
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
     });
 }

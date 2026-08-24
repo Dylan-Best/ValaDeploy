@@ -25,164 +25,87 @@
 <h1 class="font-headline-lg text-headline-lg text-on-surface">Projects</h1>
 <p class="font-body-sm text-body-sm text-secondary mt-xs">Manage and monitor your deployments.</p>
 </div>
-
 <div class="flex items-center gap-lg">
-    <!-- champ pour le nom -->>
-<span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
-<button class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
-<span class="material-symbols-outlined text-[18px]">add</span>
-                    New Project
-                </button>
+    <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
+    <a href="new-project.html" class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        New Project
+    </a>
 </div>
 </header>
+
 <!-- Statistics Grid -->
 <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
-<!-- Stat Card 1 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-<div class="flex items-center gap-xs text-secondary">
-<span class="material-symbols-outlined text-[18px]">folder</span>
-<span class="font-label-sm text-label-sm uppercase tracking-wider">Total Projects</span>
-</div>
-<div class="font-display text-display text-on-surface">12</div>
-</div>
-<!-- Stat Card 2 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-<div class="flex items-center gap-xs text-secondary">
-<span class="material-symbols-outlined text-[18px]">radar</span>
-<span class="font-label-sm text-label-sm uppercase tracking-wider">Critical Vulnerabilities</span>
-</div>
-<div class="font-display text-display text-error">4</div>
-</div>
-<!-- Stat Card 3 -->
-<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-<div class="flex items-center gap-xs text-secondary">
-<span class="material-symbols-outlined text-[18px]">memory</span>
-<span class="font-label-sm text-label-sm uppercase tracking-wider">Running Containers</span>
-</div>
-<div class="font-display text-display text-on-surface">7</div>
-</div>
+    <!-- Stat Card 1 -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
+        <div class="flex items-center gap-xs text-secondary">
+            <span class="material-symbols-outlined text-[18px]">folder</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Total Projects</span>
+        </div>
+        <div id="total-projects" class="font-display text-display text-on-surface">0</div>
+    </div>
+    <!-- Stat Card 2 -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
+        <div class="flex items-center gap-xs text-secondary">
+            <span class="material-symbols-outlined text-[18px]">radar</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Critical Vulnerabilities</span>
+        </div>
+        <div id="critical-vulns" class="font-display text-display text-error">0</div>
+    </div>
+    <!-- Stat Card 3 -->
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
+        <div class="flex items-center gap-xs text-secondary">
+            <span class="material-symbols-outlined text-[18px]">memory</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Running Containers</span>
+        </div>
+        <div id="running-containers" class="font-display text-display text-on-surface">0</div>
+    </div>
 </section>
+
 <!-- Project List Table -->
 <section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-<div class="w-full overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="border-b border-outline-variant bg-surface-container-low">
-<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Project</th>
-<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Status</th>
-<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Commit</th>
-<th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Replicas</th>
-<th class="py-md px-lg text-right"></th>
-</tr>
-</thead>
-<tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant" id="projects-table-body">
-<!-- Row 1 : running -->
-<tr class="hover:bg-surface-container transition-colors group">
-<td class="py-md px-lg">
-<div class="font-mono-code text-mono-code font-medium">auth-service</div>
-<div class="font-body-sm text-body-sm text-secondary">auth-service.192-168-1-10.sslip.io</div>
-</td>
-<td class="py-md px-lg">
-<div class="status-badge status-running">
-<div class="status-dot"></div>
-<span class="font-label-sm text-label-sm">Running</span>
-</div>
-</td>
-<td class="py-md px-lg font-mono-code text-mono-code text-secondary">db0af14</td>
-<td class="py-md px-lg text-secondary">2</td>
-<td class="py-md px-lg text-right">
-<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
-</td>
-</tr>
-<!-- Row 2 : building -->
-<tr class="hover:bg-surface-container transition-colors group">
-<td class="py-md px-lg">
-<div class="font-mono-code text-mono-code font-medium">payment-gateway</div>
-<div class="font-body-sm text-body-sm text-secondary">payment-gateway.192-168-1-10.sslip.io</div>
-</td>
-<td class="py-md px-lg">
-<div class="status-badge status-building">
-<div class="status-dot"></div>
-<span class="font-label-sm text-label-sm">Building</span>
-</div>
-</td>
-<td class="py-md px-lg font-mono-code text-mono-code text-secondary">7a2c9e1</td>
-<td class="py-md px-lg text-secondary">1</td>
-<td class="py-md px-lg text-right">
-<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
-</td>
-</tr>
-<!-- Row 3 : error -->
-<tr class="hover:bg-surface-container transition-colors group">
-<td class="py-md px-lg">
-<div class="font-mono-code text-mono-code font-medium">billing-worker</div>
-<div class="font-body-sm text-body-sm text-secondary">billing-worker.192-168-1-10.sslip.io</div>
-</td>
-<td class="py-md px-lg">
-<div class="status-badge status-error">
-<div class="status-dot"></div>
-<span class="font-label-sm text-label-sm">Error</span>
-</div>
-</td>
-<td class="py-md px-lg font-mono-code text-mono-code text-secondary">f3e8b02</td>
-<td class="py-md px-lg text-secondary">0</td>
-<td class="py-md px-lg text-right">
-<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
-</td>
-</tr>
-<!-- Row 4 : stopped -->
-<tr class="hover:bg-surface-container transition-colors group">
-<td class="py-md px-lg">
-<div class="font-mono-code text-mono-code font-medium text-secondary">frontend-app</div>
-<div class="font-body-sm text-body-sm text-secondary">frontend-app.192-168-1-10.sslip.io</div>
-</td>
-<td class="py-md px-lg">
-<div class="status-badge status-stopped">
-<div class="status-dot"></div>
-<span class="font-label-sm text-label-sm text-secondary">Stopped</span>
-</div>
-</td>
-<td class="py-md px-lg font-mono-code text-mono-code text-secondary">c19d044</td>
-<td class="py-md px-lg text-secondary">0</td>
-<td class="py-md px-lg text-right">
-<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
-</td>
-</tr>
-<!-- Row 5 : created (jamais encore déployé) -->
-<tr class="hover:bg-surface-container transition-colors group">
-<td class="py-md px-lg">
-<div class="font-mono-code text-mono-code font-medium text-secondary">notif-service</div>
-<div class="font-body-sm text-body-sm text-secondary">not yet deployed</div>
-</td>
-<td class="py-md px-lg">
-<div class="status-badge status-created">
-<div class="status-dot"></div>
-<span class="font-label-sm text-label-sm text-secondary">Created</span>
-</div>
-</td>
-<td class="py-md px-lg font-mono-code text-mono-code text-secondary">—</td>
-<td class="py-md px-lg text-secondary">—</td>
-<td class="py-md px-lg text-right">
-<button class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
+    <div class="w-full overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-outline-variant bg-surface-container-low">
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Project</th>
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Status</th>
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Commit</th>
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Replicas</th>
+                    <th class="py-md px-lg text-right"></th>
+                </tr>
+            </thead>
+            <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant" id="projects-table-body">
+                <!-- Les projets seront chargés dynamiquement ici -->
+                <!-- Ligne de chargement -->
+                <tr id="loading-row">
+                    <td colspan="5" class="py-lg text-center text-secondary">
+                        <div class="flex items-center justify-center gap-sm">
+                            <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+                            Chargement des projets...
+                        </div>
+                    </td>
+                </tr>
+                <!-- Ligne "aucun projet" (cachée par défaut) -->
+                <tr id="empty-row" style="display: none;">
+                    <td colspan="5" class="py-xl text-center text-secondary">
+                        <span class="material-symbols-outlined text-4xl block mb-sm">folder_open</span>
+                        <p>Aucun projet pour le moment</p>
+                        <a href="new-project.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90">
+                            Créer votre premier projet
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </section>
 </div>
 </main>
+
+<!-- Scripts -->
 <script src="../scripts/api/auth.js"></script>
+<script src="../scripts/api/project.js"></script>
 <script src="../scripts/components.js"></script>
 <script src="../scripts/dashboard.js"></script>
 </body></html>
