@@ -1,6 +1,7 @@
 import os
 from git import Repo
 from git.exc import GitCommandError
+import shutil
 
 def clone_repository(repo_url, clone_path, branch='main'):
     """
@@ -15,9 +16,9 @@ def clone_repository(repo_url, clone_path, branch='main'):
         dict: A dictionary containing the clone path and commit hash.
     """
     try:
-        # Check if the directory already exists
+        # supprimer le dossier avant de cloner
         if os.path.exists(clone_path):
-            raise ValueError(f"Directory '{clone_path}' already exists. Please choose a different path.")
+            shutil.rmtree(clone_path)
 
         # Ensure the parent directory exists
         parent_directory = os.path.dirname(clone_path)

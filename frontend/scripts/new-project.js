@@ -96,6 +96,46 @@ function collectEnvVars() {
     return envVars;
 }
 
+// --- Libellés lisibles pour chaque statut backend ---
+const STATUS_LABELS = {
+    building: 'Build en cours...',
+    running: 'Déploiement réussi !',
+    stopped: 'Projet arrêté',
+    failed: 'Échec du déploiement',
+};
+
+function updateSubmitButton(submitBtn, status) {
+    const label = STATUS_LABELS[status] || `${status}...`;
+    submitBtn.innerHTML = `
+        <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+        ${label}
+    `;
+}
+
+// --- Polling du statut jusqu'à succès ou échec ---
+async function pollDeployStatus(projectId, submitBtn, { intervalMs = 2000, timeoutMs = 5 * 60 * 1000 } = {}) {
+    const start = Date.now();
+
+    while (true) {
+        if (Date.now() - start > timeoutMs) {
+            throw new Error('Le déploiement prend trop de temps. Vérifiez le statut du projet plus tard.');
+        }
+
+        const status = await getDeployStatus(projectId);
+        updateSubmitButton(submitBtn, status.status);
+
+        if (status.status === 'running') {
+            return status;
+        }
+        if (status.status === 'failed') {
+            throw new Error(status.error_message || 'Le déploiement a échoué.');
+        }
+
+        // "building" (ou autre état intermédiaire) -> on repoll
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+}
+
 // --- Soumission du formulaire ---
 function setupFormSubmit() {
     const form = document.querySelector('form');
@@ -139,15 +179,18 @@ function setupFormSubmit() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
             <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-            Déploiement en cours...
+            Envoi de la demande...
         `;
 
         try {
-            // 6. Appeler l'API de création (createProject est dans projects.js)
-            const result = await createProject(payload);
-            console.log('Projet créé avec succès:', result);
+            // 6. Lancer le déploiement (réponse immédiate: { project_id, status: "building" })
+            const created = await createProject(payload);
+            console.log('Déploiement lancé, project_id =', created.project_id);
 
-            // 7. Rediriger vers le dashboard
+            // 7. Poller jusqu'à succès ou échec, en mettant à jour le bouton
+            await pollDeployStatus(created.project_id, submitBtn);
+
+            // 8. Rediriger vers le dashboard une fois RUNNING
             window.location.href = 'dashboard.html';
 
         } catch (error) {
@@ -161,7 +204,7 @@ function setupFormSubmit() {
             }
             alert(`${errorMessage}`);
 
-            // 8. Réactiver le bouton
+            // 9. Réactiver le bouton
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         }

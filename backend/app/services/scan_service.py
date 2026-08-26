@@ -21,17 +21,28 @@ def scan_image(image_name: str) -> dict:
     scan_results = json.loads(scan.stdout)
 
     severity_count = {}
+    critical_vulns = []
+
     for result in scan_results.get('Results', []):
         for vulnerability in result.get('Vulnerabilities', []):
-            severity = vulnerability.get('Severity', 'UNKNOWN') 
+            severity = vulnerability.get('Severity', 'UNKNOWN')
             severity_count[severity] = severity_count.get(severity, 0) + 1
-            
-    
+
+            if severity == 'CRITICAL':
+                critical_vulns.append({
+                    "id": vulnerability.get("VulnerabilityID"),
+                    "package": vulnerability.get("PkgName"),
+                    "installed_version": vulnerability.get("InstalledVersion"),
+                    "fixed_version": vulnerability.get("FixedVersion"),
+                    "title": vulnerability.get("Title"),
+                    "fixed": False,  # préparé pour la remédiation future
+                })
+
     return {
         "severity_count": severity_count,
-        "blocking" : severity_count.get('CRITICAL', 0) > 0 
+        "critical_vulnerabilities": critical_vulns,
+        "blocking": severity_count.get('CRITICAL', 0) > 0
     }
-    
 
 
 def detect_secret(project_path: str) -> dict:

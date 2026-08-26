@@ -27,4 +27,28 @@ function createProject(projectData) {
         .then(handleResponse);
     });
 }
-console.log('projects.js chargé, createProject =', typeof createProject);
+
+function getDeployStatus(projectId) {
+    // Récupère le statut d'un déploiement en cours
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(`http://app.localhost:8080/api/deploy/${projectId}/status`, {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(handleResponse);
+    });
+}
+
+function getDashboardStats() {
+    // Récupère les statistiques agrégées (total, running, failed, % vulns)
+    return fetchWithAutoRefresh(function(token) {
+        return fetch('http://app.localhost:8080/api/projects/dashboard/stats', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(handleResponse);
+    });
+}
+

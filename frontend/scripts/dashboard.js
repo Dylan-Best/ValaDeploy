@@ -4,27 +4,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     initUserSession(
         async (user) => {
-            // 1. Afficher le nom de l'utilisateur
             const fullnameEl = document.getElementById('user-fullname');
             if (fullnameEl) fullnameEl.textContent = user.full_name;
 
-            // 2. Charger les projets
             try {
                 const projects = await getProjects();
                 renderProjects(projects);
             } catch (error) {
                 console.error('Erreur chargement projets:', error);
-                // Afficher une erreur dans le tableau
                 const tbody = document.getElementById('projects-table-body');
                 if (tbody) {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="py-lg text-center text-error">
-                                ❌ Erreur de chargement des projets: ${error.message || 'Erreur inconnue'}
+                                 Erreur de chargement des projets: ${error.message || 'Erreur inconnue'}
                             </td>
                         </tr>
                     `;
                 }
+            }
+
+            // Charge les stats dashboard séparément (ne bloque pas l'affichage des projets)
+            try {
+                const stats = await getDashboardStats();
+                renderDashboardStats(stats);
+            } catch (error) {
+                console.error('Erreur chargement stats dashboard:', error);
             }
         },
         (error) => {
@@ -38,14 +43,11 @@ function renderProjects(projects) {
     const tbody = document.getElementById('projects-table-body');
     if (!tbody) return;
 
-    // Supprimer la ligne de chargement et la ligne vide
     const loadingRow = document.getElementById('loading-row');
     const emptyRow = document.getElementById('empty-row');
 
-    // Vider le tableau
     tbody.innerHTML = '';
 
-    // Si pas de projets, afficher le message vide
     if (projects.length === 0) {
         if (emptyRow) {
             tbody.appendChild(emptyRow);
@@ -54,13 +56,11 @@ function renderProjects(projects) {
         return;
     }
 
-    // Pour chaque projet, créer une ligne
     projects.forEach(project => {
         const row = createProjectRow(project);
         tbody.appendChild(row);
     });
 
-    // Mettre à jour les statistiques
     updateStats(projects);
 }
 
@@ -95,7 +95,7 @@ function createProjectRow(project) {
         <td class="py-md px-lg font-mono-code text-mono-code text-secondary">${project.commit_hash ? project.commit_hash.substring(0, 7) : '—'}</td>
         <td class="py-md px-lg text-secondary">${project.replica || 1}</td>
         <td class="py-md px-lg text-right">
-            <a href="project-detail.html?id=${project.id}" 
+            <a href="project-detail.html?slug=${project.slug}" 
                class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100 inline-flex items-center gap-xs">
                 <span class="font-label-sm text-label-sm">Voir</span>
                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -142,9 +142,10 @@ function updateStats(projects) {
         const runningCount = projects.filter(p => p.status === 'running').length;
         runningEl.textContent = runningCount;
     }
+}
 
-    // Vulnérabilités critiques (TODO: à implémenter quand on aura les scans)
-    // Pour l'instant, on met 0
+function renderDashboardStats(stats) {
+    // Pourcentage d'échecs dus à des vulnérabilités critiques
     const vulnsEl = document.getElementById('critical-vulns');
-    if (vulnsEl) vulnsEl.textContent = '0';
+    if (vulnsEl) vulnsEl.textContent = stats.critical_vuln_percentage + '%';
 }

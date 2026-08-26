@@ -9,6 +9,15 @@ class ProjectStatus(str, enum.Enum):
     BUILDING = "building"
     FAILED = "failed"
 
+class FailReason(str, enum.Enum):
+    VULNERABILITY = "vulnerability"
+    SECRET_LEAK = "secret_leak"
+    BUILD_ERROR = "build_error"
+    CLONE_ERROR = "clone_error"
+    DEPLOY_ERROR = "deploy_error"
+    DETECTION_ERROR = "detection_error"
+    OTHER = "other"
+
 class Project(Base):
     __tablename__ = "projects"
     
@@ -22,5 +31,9 @@ class Project(Base):
     status = Column(Enum(ProjectStatus), nullable=False, default=ProjectStatus.BUILDING)
     container_ids = Column(JSON, nullable=True)  # liste des container IDs
     commit_hash = Column(String, nullable=True)
+    error_message = Column(String, nullable=True)
+    fail_reason = Column(Enum(FailReason), nullable=True)
+    vulnerabilities = Column(JSON, nullable=True, default=list)  # detail des vulns critiques
+    critical_vuln_count = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
