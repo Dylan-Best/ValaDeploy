@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.core.security import get_current_user
@@ -42,3 +42,4 @@ def get_dashboard_stats(
     pourcentage d'échecs dus à des vulnérabilités critiques).
     """
     return ProjectService.get_dashboard_stats(db, current_user.id)
+

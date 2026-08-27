@@ -1,93 +1,82 @@
-// Comportement de la page Security Report.
-//
-// IMPORTANT (limitation backend actuelle, voir échange avec l'équipe backend) :
-// - Il n'existe aucun endpoint pour récupérer les résultats de scan d'un projet
-//   (ni pendant, ni après le déploiement). scan_image()/detect_secret() sont
-//   appelés en interne dans /clone mais leurs résultats ne sont renvoyés que
-//   dans le message d'erreur en cas de blocage.
-// - scan_image() ne retourne que des COMPTEURS par sévérité, pas la liste
-//   détaillée de chaque CVE (package, description, version corrigée...).
-// - detect_secret() ne retourne le détail que du PREMIER secret trouvé.
-//
-// TODO (backend) pour égaler cette page à terme :
-//   1. GET /projects/{slug}/security -> dernier résultat de scan persisté
-//   2. Étendre scan_image() pour retourner la liste des vulnérabilités
-//      (pas seulement severity_count), similaire à la structure Trivy brute :
-//      { id, package, severity, installed_version, fixed_version, title }
-//   3. Étendre detect_secret() pour retourner TOUS les secrets, pas juste le 1er
-//
-// En attendant, cette page affiche des données d'exemple respectant la forme
-// RÉELLE actuelle du backend (severity_count + un seul secret détaillé).
+// scripts/security.js
+// Liste globale des projets avec leur statut de sécurité
 
 document.addEventListener('DOMContentLoaded', () => {
-    const slug = new URLSearchParams(window.location.search).get('slug') || 'unknown-project';
-    document.getElementById('project-slug').textContent = slug;
-
-    // Exemple respectant exactement la forme retournée par scan_image()
-    const trivyResult = {
-        severity_count: { CRITICAL: 3, HIGH: 5, MEDIUM: 12, LOW: 20, UNKNOWN: 2 },
-        blocking: true,
-    };
-
-    // Exemple respectant exactement la forme retournée par detect_secret()
-    const gitleaksResult = {
-        blocking: false,
-        secret_count: 0,
-        secret_found: null,
-    };
-
-    renderSummary(trivyResult, gitleaksResult);
-    renderTrivyCounts(trivyResult);
-    renderGitleaksResult(gitleaksResult);
+    initUserSession(
+        async () => {
+            try {
+                const reports = await getSecurityList();
+                renderSecurityTable(reports);
+            } catch (error) {
+                console.error('Erreur chargement rapports de sécurité:', error);
+                document.getElementById('security-table-body').innerHTML = `
+                    <tr><td colspan="6" class="py-lg text-center text-error">
+                        Erreur de chargement: ${error.message || 'Erreur inconnue'}
+                    </td></tr>`;
+            }
+        },
+        (error) => {
+            console.log('Session invalide ou expirée :', error.message);
+            window.location.href = "login.html";
+        }
+    );
 });
 
-function renderSummary(trivyResult, gitleaksResult) {
-    const badge = document.getElementById('scan-status-badge');
-    const blocked = trivyResult.blocking || gitleaksResult.blocking;
+function renderSecurityTable(reports) {
+    const tbody = document.getElementById('security-table-body');
+    tbody.innerHTML = '';
 
-    badge.textContent = blocked ? 'Deployment Blocked' : 'Passed';
-    badge.className = blocked
-        ? 'flex items-center gap-2 px-4 py-2 border border-error text-error rounded-full font-label-md text-label-md bg-white'
-        : 'flex items-center gap-2 px-4 py-2 border border-[#12B76A] text-[#12B76A] rounded-full font-label-md text-label-md bg-white';
-}
-
-function renderTrivyCounts(trivyResult) {
-    const counts = trivyResult.severity_count;
-    document.getElementById('count-critical').textContent = counts.CRITICAL || 0;
-    document.getElementById('count-high').textContent = counts.HIGH || 0;
-    document.getElementById('count-medium').textContent = counts.MEDIUM || 0;
-    document.getElementById('count-low').textContent = counts.LOW || 0;
-}
-
-function renderGitleaksResult(gitleaksResult) {
-    const container = document.getElementById('gitleaks-section');
-
-    if (gitleaksResult.secret_count === 0) {
-        container.innerHTML = `
-            <div class="flex items-center gap-2 text-[#12B76A] font-body-sm text-body-sm">
-                <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                No secrets detected in the repository history.
-            </div>`;
+    if (reports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-lg text-center text-secondary">No projects yet.</td></tr>`;
         return;
     }
 
-    const secret = gitleaksResult.secret_found;
-    const extraNote = gitleaksResult.secret_count > 1
-        ? `<p class="font-body-sm text-body-sm text-secondary mt-sm italic">${gitleaksResult.secret_count} secrets detected in total — only the first is shown (backend limitation, see TODO).</p>`
-        : '';
+    reports.forEach(report => {
+        tbody.appendChild(createSecurityRow(report));
+    });
+}
 
-    container.innerHTML = `
-        <div class="py-md flex flex-col md:flex-row gap-md md:items-center justify-between">
-            <div class="flex-1">
-                <div class="flex items-center gap-sm mb-xs">
-                    <span class="font-mono-code text-mono-code text-on-surface font-medium">${secret.rule_id}</span>
-                    <span class="px-2 py-0.5 border border-outline rounded text-xs font-mono-code text-secondary">${secret.file}</span>
-                </div>
-                <div class="text-secondary text-sm">${secret.description}</div>
+function createSecurityRow(report) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-surface-container transition-colors group border-b border-outline-variant';
+
+    const blocked = report.fail_reason === 'VULNERABILITY' || report.fail_reason === 'SECRET_LEAK';
+    const scanBadge = blocked
+        ? `<span class="inline-flex items-center gap-2 px-3 py-1 border border-error text-error rounded-full font-label-sm text-label-sm">Blocked</span>`
+        : `<span class="inline-flex items-center gap-2 px-3 py-1 border border-[#12B76A] text-[#12B76A] rounded-full font-label-sm text-label-sm">Passed</span>`;
+
+    const deployStatus = getStatusConfig(report.status);
+
+    row.innerHTML = `
+        <td class="py-md px-lg font-mono-code text-mono-code font-medium">${report.slug}</td>
+        <td class="py-md px-lg">
+            <div class="status-badge ${deployStatus.class}">
+                <div class="status-dot"></div>
+                <span class="font-label-sm text-label-sm">${deployStatus.label}</span>
             </div>
-            <div class="font-body-sm text-body-sm text-secondary md:text-right">
-                <div>Line ${secret.line}</div>
-            </div>
-        </div>
-        ${extraNote}`;
+        </td>
+        <td class="py-md px-lg ${report.critical_vuln_count > 0 ? 'text-error' : 'text-secondary'}">${report.critical_vuln_count}</td>
+        <td class="py-md px-lg ${report.secret_count > 0 ? 'text-error' : 'text-secondary'}">${report.secret_count}</td>
+        <td class="py-md px-lg">${scanBadge}</td>
+        <td class="py-md px-lg text-right">
+            <a href="security-details.html?slug=${report.slug}"
+               class="text-secondary hover:text-on-surface transition-colors opacity-0 group-hover:opacity-100 inline-flex items-center gap-xs">
+                <span class="font-label-sm text-label-sm">Report</span>
+                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+            </a>
+        </td>
+    `;
+    return row;
+}
+
+// Réutilise le même mapping que dashboard.js (dupliqué ici volontairement,
+// les deux fichiers sont chargés sur des pages différentes)
+function getStatusConfig(status) {
+    const configs = {
+        'running': { label: 'Running', class: 'status-running' },
+        'stopped': { label: 'Stopped', class: 'status-stopped' },
+        'building': { label: 'Building', class: 'status-building' },
+        'failed': { label: 'Failed', class: 'status-error' }
+    };
+    return configs[status] || { label: status || 'Unknown', class: 'status-created' };
 }

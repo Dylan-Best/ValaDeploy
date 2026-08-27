@@ -6,6 +6,8 @@ from app.api.routes_deploy import router as deploy_router
 from app.api.routes_logs import router as logs_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_projects import router as project_router
+from app.api.routes_security import router as security_router
+from app.api.routes_stack import router as stack_router
 
 
 app = FastAPI(
@@ -15,10 +17,11 @@ app = FastAPI(
 
 
 app.include_router(deploy_router, prefix="/api")
+app.include_router(stack_router, prefix="/api")
 app.include_router(logs_router, prefix="/api")
 app.include_router(auth_router, prefix="/api/auth")
 app.include_router(project_router, prefix="/api")
-
+app.include_router(security_router, prefix="/api")
 
 @app.get("/")
 def show_message():
