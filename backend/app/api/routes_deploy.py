@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.project import ProjectStatus
+from app.models.project import ProjectStatus, ComponentKind
 from app.services.project_service import ProjectService
 from app.services.deploy_service import DeployService
 from app.schemas.deploy import CloneSchema
@@ -56,4 +56,16 @@ async def get_deploy_status(
         "status": project.status,
         "error_message": project.error_message,
         "container_ids": project.container_ids if project.status == ProjectStatus.RUNNING else None,
+    }
+    
+@router.get("/deploy/stack/component/{component_id}/reveal-db-credentials")
+def reveal_db_credentials(component_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    component = ProjectService.get_component_by_id(db, component_id)
+    if component is None or component.kind != ComponentKind.DATABASE:
+        raise HTTPException(404, "Composant introuvable")
+    # TODO: vérifier que current_user est bien propriétaire du projet parent
+    return {
+        "db_user": component.db_user,
+        "db_password": component.db_password,
+        "db_name": component.db_name,
     }

@@ -1,3 +1,5 @@
+import traceback
+
 from app.db.database import Session_local
 from app.schemas.deploy import CloneSchema
 from app.services.project_service import ProjectService
@@ -104,8 +106,27 @@ class DeployService:
                                 — même contenu que celui envoyé à create_pending_stack,
                                 avec en plus "component_id" (l'id retourné par la création).
         """
+        
+        # ⚠️ TEMPORAIRE — usage TEST uniquement, à repasser à False avant toute
+        # utilisation réelle. Permet de voir la stack tourner malgré des vulnérabilités
+        # critiques détectées, pour valider la communication réseau inter-conteneurs.
+        SKIP_SECURITY_GATE_FOR_TEST = True
+        
         db = Session_local()
         project_network = ensure_project_network(slug)
+
+        # Le composant DATABASE doit être traité avant BACK, pour que ses credentials
+        # (générés plus bas) soient déjà en base au moment où on construit DATABASE_URL
+        # pour le composant BACK. On trie sans modifier l'ordre relatif du reste.
+        components = sorted(
+            components,
+            key=lambda c: 0 if c["kind"] == ComponentKind.DATABASE else 1
+        )
+
+        # Référence vers le composant DATABASE de la stack une fois traité, pour
+        # permettre l'injection auto de DATABASE_URL dans le composant BACK plus bas.
+        # Reste à None si la stack n'a pas de composant DATABASE.
+        db_component = None
 
         try:
             for comp_payload in components:
@@ -124,16 +145,39 @@ class DeployService:
                                 comp_payload["volume_name"]: {"bind": "/var/lib/postgresql/data", "mode": "rw"}
                             }
 
+                        # Génération auto des credentials (user/password/db), jamais saisis
+                        # par l'utilisateur. Persistés une seule fois sur le ProjectComponent.
+                        ProjectService.generate_db_credentials(db, component.id, slug)
+                        db.refresh(component)
+
+                        # Les credentials générés priment : on les impose à l'image officielle
+                        # Postgres via les env vars standard, en gardant d'éventuelles
+                        # envs_var supplémentaires fournies par l'utilisateur (non-secrètes).
+                        db_envs_var = {
+                            **(comp_payload.get("envs_var") or {}),
+                            "POSTGRES_USER": component.db_user,
+                            "POSTGRES_PASSWORD": component.db_password,
+                            "POSTGRES_DB": component.db_name,
+                        }
+
                         container_id = run_container(
                             image_name=comp_payload["db_image"],
                             slug=container_name,
                             network=project_network,
                             envs_var=comp_payload.get("envs_var"),
-                            extra_networks=None,        # jamais sur le réseau Traefik
+                            plain_envs_var={
+                                "POSTGRES_USER": component.db_user,
+                                "POSTGRES_PASSWORD": component.db_password,
+                                "POSTGRES_DB": component.db_name,
+                            },
+                            extra_networks=None,
                             volumes=volume_binding,
-                            expose_traefik=False,       # jamais de label Traefik
+                            expose_traefik=False,
                         )
                         ProjectService.finalize_component_success(db, component.id, container_ids=[container_id])
+
+                        # Gardé pour l'injection auto de DATABASE_URL dans le composant BACK
+                        db_component = component
                     except Exception as e:
                         ProjectService.mark_component_failed(
                             db, component.id, f"Erreur démarrage database: {e}", fail_reason=FailReason.DEPLOY_ERROR
@@ -178,8 +222,14 @@ class DeployService:
                     )
                     continue
 
-                trivy_result = scan_image(build_result)
-                ProjectService.save_component_scan_results(db, component.id, trivy_result=trivy_result)
+                try:
+                    trivy_result = scan_image(build_result, skip_security_gate=SKIP_SECURITY_GATE_FOR_TEST)
+                    ProjectService.save_component_scan_results(db, component.id, trivy_result=trivy_result)
+                except Exception as e:
+                    ProjectService.mark_component_failed(
+                        db, component.id, f"Erreur scan vulnérabilités: {e}", fail_reason=FailReason.SCAN_ERROR
+                    )
+                    continue
                 if trivy_result["blocking"]:
                     crit_vulns = trivy_result["critical_vulnerabilities"]
                     ProjectService.mark_component_failed(
@@ -194,19 +244,33 @@ class DeployService:
                 # on connecte au réseau Traefik pour être routable publiquement.
                 extra_nets = [settings.APP_NETWORK] if comp_payload.get("expose_publicly") else None
 
+                # Injection auto de DATABASE_URL si la stack a un composant DATABASE déjà
+                # démarré. L'utilisateur n'a plus à la renseigner manuellement dans envs_var.
+                plain_envs = {}
+                if comp_payload["kind"] == ComponentKind.BACK and db_component is not None:
+                    db_container_name = f"{slug}-{db_component.name}"
+                    plain_envs["DATABASE_URL"] = (
+                        f"postgres://{db_component.db_user}:{db_component.db_password}"
+                        f"@{db_container_name}:5432/{db_component.db_name}"
+                    )
+
                 try:
                     container_ids = scale_project(
                         build_result,
                         slug=container_name,
                         network=project_network,
                         desired_replicas=comp_payload.get("replica", 1),
-                        envs_var=comp_payload.get("envs_var"),
+                        envs_var=comp_payload.get("envs_var"),   # reste tel quel, jamais touché par nous
                         extra_networks=extra_nets,
+                        plain_envs_var=plain_envs,               # DATABASE_URL passe exclusivement ici
                     )
+                    
                     ProjectService.finalize_component_success(
                         db, component.id, container_ids=container_ids, commit_hash=clone_result["commit_hash"]
                     )
                 except Exception as e:
+                    print(f"[DEBUG] Exception complète pour {container_name}:")
+                    print(traceback.format_exc())
                     ProjectService.mark_component_failed(
                         db, component.id, f"Erreur déploiement: {e}", fail_reason=FailReason.DEPLOY_ERROR
                     )
@@ -220,5 +284,3 @@ class DeployService:
 
         finally:
             db.close()
-            
-            

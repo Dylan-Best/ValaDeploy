@@ -3,6 +3,7 @@ from app.models.project import FailReason, Project, ProjectStatus, ProjectCompon
 from app.models.user import User
 from datetime import datetime
 from typing import List, Dict, Any
+import secrets
 
 class ProjectService:
     """Service pour la gestion des projets en base de données"""
@@ -359,3 +360,22 @@ class ProjectService:
         db.refresh(new_project)  # recharge new_project.services via la relation
 
         return new_project
+    
+    @staticmethod
+    def generate_db_credentials(db, component_id, slug: str):
+        """
+        Génère et persiste des credentials DB aléatoires pour un ProjectComponent
+        de type DATABASE. Appelé une seule fois, jamais ressaisi par l'utilisateur.
+        """
+        component = ProjectService.get_component_by_id(db, component_id)
+        if component is None:
+            return None
+
+        component.db_user = f"{slug}_user"
+        component.db_name = f"{slug}_db"
+        component.db_password = secrets.token_urlsafe(24)
+        component.updated_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(component)
+        return component

@@ -23,6 +23,7 @@ class FailReason(str, enum.Enum):
     CLONE_ERROR = "clone_error"
     DEPLOY_ERROR = "deploy_error"
     DETECTION_ERROR = "detection_error"
+    SCAN_ERROR = "scan_error"
     OTHER = "other"
 
 class Project(Base):
@@ -50,7 +51,7 @@ class Project(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    services = relationship("ProjectService", back_populates="project", cascade="all, delete-orphan")
+    services = relationship("ProjectComponent", back_populates="project", cascade="all, delete-orphan")
 
 
 class ProjectComponent(Base):
@@ -84,6 +85,10 @@ class ProjectComponent(Base):
     db_image = Column(String, nullable=True)             # ex: "postgres:16", null si pas une DB
     volume_name = Column(String, nullable=True)           # nom du volume Docker pour la persistance
 
+    db_user = Column(String, nullable=True)
+    db_password = Column(String, nullable=True)      # généré, jamais saisi par l'utilisateur
+    db_name = Column(String, nullable=True)
+    
     # --- Résultats de scan sécurité, copiés depuis Project (mêmes noms, même forme) ---
     # Null pour un service DATABASE (pas de scan Trivy/Gitleaks sur une image officielle).
     vulnerabilities = Column(JSON, nullable=True, default=list)

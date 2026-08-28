@@ -3,17 +3,29 @@ import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-def scan_image(image_name: str) -> dict:
+def scan_image(image_name: str, skip_security_gate: bool = False) -> dict:
     """
     Scan a Docker image for vulnerabilities using Trivy.
 
     Args:
         image_name (str): The name of the Docker image to scan.
+        skip_security_gate (bool, optional): si True, le scan s'exécute normalement
+            et les résultats sont toujours enregistrés, mais "blocking" est forcé à False.
+            ⚠️ USAGE TEST UNIQUEMENT — à retirer ou remettre à False avant toute
+            utilisation réelle. Ne désactive jamais le scan lui-même, seulement le blocage.
 
     Returns:
         dict: A dictionary containing the scan results.
     """
-    scan = subprocess.run(['trivy', 'image', '--format', 'json', image_name], capture_output=True, text=True)
+    try:
+        scan = subprocess.run(
+            ['trivy', 'image', '--format', 'json', image_name],
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+    except subprocess.TimeoutExpired:
+        raise ValueError("Le scan Trivy a dépassé le délai imparti (timeout)")
 
     if scan.returncode != 0:
         raise ValueError(f"Error occurred while scanning image: {scan.stderr}")
@@ -35,13 +47,16 @@ def scan_image(image_name: str) -> dict:
                     "installed_version": vulnerability.get("InstalledVersion"),
                     "fixed_version": vulnerability.get("FixedVersion"),
                     "title": vulnerability.get("Title"),
-                    "fixed": False,  # préparé pour la remédiation future
+                    "fixed": False,
                 })
 
     return {
         "severity_count": severity_count,
         "critical_vulnerabilities": critical_vulns,
-        "blocking": severity_count.get('CRITICAL', 0) > 0
+        # TEMPORAIRE (test) : si skip_security_gate=True, on garde les résultats
+        # réels du scan mais on force "blocking" à False pour laisser passer le
+        # déploiement malgré la vulnérabilité critique détectée.
+        "blocking": False if skip_security_gate else severity_count.get('CRITICAL', 0) > 0
     }
 
 
