@@ -3,7 +3,7 @@ from app.core.config import settings
 
 def build_traefik_labels(
     project_name: str,      # unique identifier for the project (slug)
-    internal_port: int = settings.APP_PORT,     # Ex: 8000
+    internal_port: int,   # Ex: 8000
     base_domain: str = settings.APP_DOMAIN  # Ex: "localhost"
 ) -> dict[str, str]:
     

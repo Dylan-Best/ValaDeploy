@@ -5,7 +5,7 @@ from app.core.security import decrypt_data
 
 def run_container(image_name: str, slug: str, network: str, envs_var: dict = None,
                    extra_networks: list = None, volumes: dict = None,
-                   expose_traefik: bool = True, plain_envs_var: dict = None) -> str:
+                   expose_traefik: bool = True, plain_envs_var: dict = None, port: int = None) -> str:
     """
     ...
     plain_envs_var (dict, optional): variables déjà en clair (non chiffrées), fusionnées
@@ -22,8 +22,12 @@ def run_container(image_name: str, slug: str, network: str, envs_var: dict = Non
         pass
     except docker.errors.APIError as e:
         raise ValueError(f"Error occurred while running container: {e}")
+    
+    if expose_traefik and port is None:
+        raise ValueError(f"port est requis quand expose_traefik=True (conteneur: {slug})")
 
-    traefik_labels = build_traefik_labels(slug) if expose_traefik else {}
+
+    traefik_labels = build_traefik_labels(slug, internal_port=port) if expose_traefik else {}
 
     # Decrypt environment variables if provided
     var_envs = {}
@@ -59,7 +63,7 @@ def run_container(image_name: str, slug: str, network: str, envs_var: dict = Non
 
 def scale_project(image_name: str, slug: str, network: str, desired_replicas: int,
                    envs_var: dict = None, extra_networks: list = None,
-                   plain_envs_var: dict = None) -> list:
+                   plain_envs_var: dict = None, port: int = None,expose_traefik: bool = True) -> list:
     """
     Scale the number of running containers for a project.
 
@@ -106,8 +110,13 @@ def scale_project(image_name: str, slug: str, network: str, desired_replicas: in
     for i in range(1, desired_replicas + 1):
         container_name = f"{slug}-{i}"
         new_container_id = run_container(
-            image_name, container_name, network, envs_var, extra_networks,
+            image_name, 
+            container_name, 
+            network, envs_var, 
+            extra_networks,
             plain_envs_var=plain_envs_var,
+            port=port,
+            expose_traefik=expose_traefik,
         )
         running_container_ids.append(new_container_id)
     return running_container_ids

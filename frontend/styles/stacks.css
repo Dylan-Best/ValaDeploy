@@ -1,0 +1,26 @@
+/* stacks.css — styles spécifiques à la page Stacks.
+   Les classes .status-badge / .status-dot / .status-running etc. viennent
+   de dashboard.css (chargé avant ce fichier dans stacks.html), pas dupliquées ici. */
+
+.stack-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-icon {
+    transition: transform 0.15s ease;
+}
+
+.stack-detail-row td {
+    animation: detail-fade-in 0.15s ease;
+}
+
+@keyframes detail-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

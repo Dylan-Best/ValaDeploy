@@ -80,6 +80,7 @@ class ProjectComponent(Base):
     container_ids = Column(JSON, nullable=True)          # liste des container IDs (comme sur Project)
     commit_hash = Column(String, nullable=True)
     env_vars = Column(JSON, nullable=False, default=dict)
+    port = Column(Integer, nullable=True) 
 
     # --- Champs pour un service DATABASE uniquement ---
     db_image = Column(String, nullable=True)             # ex: "postgres:16", null si pas une DB

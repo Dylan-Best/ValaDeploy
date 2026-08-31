@@ -52,3 +52,28 @@ function getDashboardStats() {
     });
 }
 
+// ---------- STACKS ----------
+
+function getStacks() {
+    // Récupère la liste résumée de toutes les stacks de l'utilisateur (1 ligne/stack)
+    return fetchWithAutoRefresh(function(token) {
+        return fetch('http://app.localhost:8080/api/deploy/stacks', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(handleResponse);
+    });
+}
+
+function getStackDetail(projectId) {
+    // Récupère le détail des composants d'une stack (statut individuel front/back/database)
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(`http://app.localhost:8080/api/deploy/stack/${projectId}/status`, {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(handleResponse);
+    });
+}

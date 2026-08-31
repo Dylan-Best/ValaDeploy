@@ -1,3 +1,4 @@
+import logging
 import traceback
 
 from app.db.database import Session_local
@@ -53,8 +54,10 @@ class DeployService:
 
             try:
                 container_ids = scale_project(
-                    build_result, payload.slug, settings.APP_NETWORK,
-                    payload.replica, payload.envs_var
+                    build_result, 
+                    payload.slug, settings.APP_NETWORK,
+                    payload.replica, payload.envs_var,
+                    port=payload.port,
                 )
             except Exception as e:
                 raise DeployError(f"Erreur lors du déploiement des conteneurs: {e}") from e
@@ -186,6 +189,18 @@ class DeployService:
 
                 # ---------- CAS FRONT / BACK : même pipeline que l'existant, par composant ----------
                 destination_path = f"/tmp/ids-repo/{container_name}"
+                
+                # Garde-fou : le schéma Pydantic rend déjà `port` obligatoire pour FRONT/BACK,
+                # mais on revalide ici au cas où le payload aurait transité par un autre chemin
+                # (ex: rejeu manuel, script interne) sans repasser par la validation Pydantic.
+                if comp_payload.get("port") is None:
+                    ProjectService.mark_component_failed(
+                        db, component.id,
+                        "Port d'écoute non renseigné pour ce composant",
+                        fail_reason=FailReason.DEPLOY_ERROR,
+                    )
+                    continue
+
 
                 try:
                     clone_result = clone_repository(
@@ -262,15 +277,16 @@ class DeployService:
                         desired_replicas=comp_payload.get("replica", 1),
                         envs_var=comp_payload.get("envs_var"),   # reste tel quel, jamais touché par nous
                         extra_networks=extra_nets,
-                        plain_envs_var=plain_envs,               # DATABASE_URL passe exclusivement ici
+                        port=comp_payload["port"], 
+                        plain_envs_var=plain_envs, # DATABASE_URL passe exclusivement ici
+                        expose_traefik=comp_payload.get("expose_publicly", False),
                     )
                     
                     ProjectService.finalize_component_success(
                         db, component.id, container_ids=container_ids, commit_hash=clone_result["commit_hash"]
                     )
                 except Exception as e:
-                    print(f"[DEBUG] Exception complète pour {container_name}:")
-                    print(traceback.format_exc())
+                    logging.exception(f"Erreur déploiement du composant {container_name}")
                     ProjectService.mark_component_failed(
                         db, component.id, f"Erreur déploiement: {e}", fail_reason=FailReason.DEPLOY_ERROR
                     )

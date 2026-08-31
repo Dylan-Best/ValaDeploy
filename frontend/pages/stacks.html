@@ -1,7 +1,7 @@
 <!DOCTYPE html><html class="light" lang="en"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>ValaDeploy Dashboard</title>
+<title>ValaDeploy Dashboard - Stacks</title>
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Google Fonts -->
@@ -10,10 +10,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
 <!-- Material Symbols -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<script src="../styles/dashboard.tailwind.config.js"></script>
+<script src="../styles/stacks.tailwind.config.js"></script>
 <link href="../styles/dashboard.css" rel="stylesheet">
+<link href="../styles/stacks.css" rel="stylesheet">
 </head>
-<body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="projects">
+<body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="stacks">
 <!-- Shared Component: SideNavBar -->
 <div data-component="../components/sidebar.html"></div>
 <!-- Main Content Area -->
@@ -22,8 +23,8 @@
 <!-- Page Header -->
 <header class="flex justify-between items-center mb-lg">
 <div>
-<h1 class="font-headline-lg text-headline-lg text-on-surface">Projects</h1>
-<p class="font-body-sm text-body-sm text-secondary mt-xs">Manage and monitor your deployments.</p>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Stacks</h1>
+<p class="font-body-sm text-body-sm text-secondary mt-xs">Multi-service deployments: front, back and database in one.</p>
 </div>
 <div class="flex items-center gap-lg">
     <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
@@ -36,8 +37,8 @@
 
 <!-- Onglets Projects / Stacks -->
 <nav class="flex gap-lg border-b border-outline-variant mb-xl">
-    <a href="dashboard.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md">Projects</a>
-    <a href="stacks.html" class="pb-sm border-b-2 border-transparent text-secondary hover:text-on-surface font-label-md text-label-md transition-colors">Stacks</a>
+    <a href="dashboard.html" class="pb-sm border-b-2 border-transparent text-secondary hover:text-on-surface font-label-md text-label-md transition-colors">Projects</a>
+    <a href="stacks.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md">Stacks</a>
 </nav>
 
 <!-- Statistics Grid -->
@@ -45,60 +46,58 @@
     <!-- Stat Card 1 -->
     <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
         <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">folder</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Total Projects</span>
+            <span class="material-symbols-outlined text-[18px]">stacks</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Total Stacks</span>
         </div>
-        <div id="total-projects" class="font-display text-display text-on-surface">0</div>
+        <div id="total-stacks" class="font-display text-display text-on-surface">0</div>
     </div>
     <!-- Stat Card 2 -->
     <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-    <div class="flex items-center gap-xs text-secondary">
-        <span class="material-symbols-outlined text-[18px]">radar</span>
-        <span class="font-label-sm text-label-sm uppercase tracking-wider">Critical Vuln Failures</span>
-    </div>
-    <div id="critical-vulns" class="font-display text-display text-error">0%</div>
+        <div class="flex items-center gap-xs text-secondary">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Running</span>
+        </div>
+        <div id="running-stacks" class="font-display text-display text-on-surface">0</div>
     </div>
     <!-- Stat Card 3 -->
     <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
         <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">memory</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Running Containers</span>
+            <span class="material-symbols-outlined text-[18px]">error</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Failed</span>
         </div>
-        <div id="running-containers" class="font-display text-display text-on-surface">0</div>
+        <div id="failed-stacks" class="font-display text-display text-error">0</div>
     </div>
 </section>
 
-<!-- Project List Table -->
+<!-- Stack List Table -->
 <section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
     <div class="w-full overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="border-b border-outline-variant bg-surface-container-low">
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Project</th>
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Stack</th>
                     <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Status</th>
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Commit</th>
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Replicas</th>
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Components</th>
+                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Created</th>
                     <th class="py-md px-lg text-right"></th>
                 </tr>
             </thead>
-            <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant" id="projects-table-body">
-                <!-- Les projets seront chargés dynamiquement ici -->
-                <!-- Ligne de chargement -->
+            <tbody class="font-body-sm text-body-sm text-on-surface" id="stacks-table-body">
+                <!-- Les stacks seront chargées dynamiquement ici -->
                 <tr id="loading-row">
                     <td colspan="5" class="py-lg text-center text-secondary">
                         <div class="flex items-center justify-center gap-sm">
                             <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                            Chargement des projets...
+                            Chargement des stacks...
                         </div>
                     </td>
                 </tr>
-                <!-- Ligne "aucun projet" (cachée par défaut) -->
                 <tr id="empty-row" style="display: none;">
                     <td colspan="5" class="py-xl text-center text-secondary">
-                        <span class="material-symbols-outlined text-4xl block mb-sm">folder_open</span>
-                        <p>Aucun projet pour le moment</p>
+                        <span class="material-symbols-outlined text-4xl block mb-sm">layers_clear</span>
+                        <p>Aucune stack pour le moment</p>
                         <a href="new-project.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90">
-                            Créer votre premier projet
+                            Déployer votre première stack
                         </a>
                     </td>
                 </tr>
@@ -113,5 +112,5 @@
 <script src="../scripts/api/auth.js"></script>
 <script src="../scripts/api/project.js"></script>
 <script src="../scripts/components.js"></script>
-<script src="../scripts/dashboard.js"></script>
+<script src="../scripts/stacks.js"></script>
 </body></html>

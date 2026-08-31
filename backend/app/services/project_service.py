@@ -352,6 +352,7 @@ class ProjectService:
                 env_vars=c.get("env_vars", {}),
                 db_image=c.get("db_image"),
                 volume_name=c.get("volume_name"),
+                port=c.get("port"),
                 created_at=datetime.utcnow()
             )
             db.add(component)
@@ -379,3 +380,17 @@ class ProjectService:
         db.commit()
         db.refresh(component)
         return component
+    
+    
+    # project_service.py
+    @staticmethod
+    def get_user_stacks(db: Session, user_id: int) -> List[Project]:
+        """Récupère tous les projets 'stack' (avec au moins un ProjectComponent) d'un utilisateur."""
+        stack_project_ids = db.query(ProjectComponent.project_id).distinct().subquery()
+        return (
+            db.query(Project)
+            .join(ProjectComponent, ProjectComponent.project_id == Project.id)
+            .filter(Project.user_id == user_id)
+            .filter(Project.id.in_(stack_project_ids))
+            .all()
+        )

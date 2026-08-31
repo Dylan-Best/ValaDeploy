@@ -35,6 +35,7 @@ async def deploy_stack(
             "env_vars": c.envs_var or {},
             "db_image": c.db_image,
             "volume_name": c.volume_name,
+            "port": c.port,
         }
         for c in payload.components
     ]
@@ -64,6 +65,7 @@ async def deploy_stack(
             "db_image": c.db_image,
             "volume_name": c.volume_name,
             "expose_publicly": c.expose_publicly,
+            "port": c.port,
         }
         for c in payload.components
     ]
@@ -83,6 +85,23 @@ async def deploy_stack(
         "message": "Déploiement de la stack lancé."
     }
 
+
+# routes/deploy.py
+@router.get("/deploy/stacks")
+async def list_stacks(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Liste résumée (1 ligne/stack) — détail des composants chargé à la demande via l'endpoint existant /deploy/stack/{project_id}/status."""
+    stacks = ProjectService.get_user_stacks(db, current_user.id)
+    result = []
+    for project in stacks:
+        components = ProjectService.get_components_by_project(db, project.id)
+        result.append({
+            "project_id": project.id,
+            "slug": project.slug,
+            "status": project.status,
+            "created_at": project.created_at,
+            "component_count": len(components),
+        })
+    return result
 
 @router.get("/deploy/stack/{project_id}/status")
 async def get_stack_status(

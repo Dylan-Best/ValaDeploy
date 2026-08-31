@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 class CloneSchema(BaseModel):
     """ 
@@ -15,3 +15,11 @@ Attributes:
     slug: str
     replica : int = 1
     envs_var: dict[str, str] | None = None 
+    port: int
+
+    @field_validator("port")
+    @classmethod
+    def check_port_range(cls, v: int) -> int:
+        if not (1 <= v <= 65535):
+            raise ValueError(f"Le port {v} n'est pas valide (doit être entre 1 et 65535).")
+        return v
