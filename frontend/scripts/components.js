@@ -27,15 +27,16 @@ function highlightActiveNavLink() {
     if (!currentPage) return;
 
     document.querySelectorAll('.nav-link').forEach((link) => {
-        if (link.dataset.page === currentPage) {
-            link.classList.remove('text-on-surface-variant', 'opacity-70');
-            link.classList.add(
-                'text-primary',
-                'font-bold',
-                'border-r-2',
-                'border-primary',
-                'bg-surface-container-highest'
-            );
+        if (link.dataset.page !== currentPage) return;
+
+        link.classList.remove('text-on-surface-variant', 'opacity-70');
+        link.classList.add('text-on-surface', 'font-semibold', 'bg-surface-container-high');
+
+        const iconWrap = link.querySelector('.nav-icon-wrap');
+        if (iconWrap) {
+            iconWrap.classList.add('bg-primary');
+            const icon = iconWrap.querySelector('.material-symbols-outlined');
+            if (icon) icon.classList.add('text-on-primary');
         }
     });
 }
