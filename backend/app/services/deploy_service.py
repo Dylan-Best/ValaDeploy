@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+
 from app.db.database import Session_local
 from app.schemas.deploy import CloneSchema
 from app.services.project_service import ProjectService
@@ -114,6 +115,7 @@ class DeployService:
         # utilisation réelle. Permet de voir la stack tourner malgré des vulnérabilités
         # critiques détectées, pour valider la communication réseau inter-conteneurs.
         SKIP_SECURITY_GATE_FOR_TEST = True
+        logger = logging.getLogger(__name__)
         
         db = Session_local()
         project_network = ensure_project_network(slug)
@@ -229,8 +231,25 @@ class DeployService:
                     )
                     continue
 
+                build_args = {}
+                if comp_payload["kind"] == ComponentKind.FRONT:
+                    # On cherche le composant BACK dans la liste pour connaître son nom
+                    back_comp = next((c for c in components if c["kind"] == ComponentKind.BACK), None)
+                    if back_comp:
+                        back_container_name = f"{slug}-{back_comp['name']}"
+                        # Remplace ".localhost" par ton domaine de prod si besoin (ex: settings.TRAEFIK_DOMAIN)
+                        back_url = f"http://{back_container_name}.localhost" 
+                        build_args["VITE_API_URL"] = back_url
+                        logger.info(f"[{container_name}] Injection de VITE_API_URL={back_url}")
+
+                
                 try:
-                    build_result = build_docker_image(destination_path, container_name, clone_result["commit_hash"])
+                    build_result = build_docker_image(
+                        destination_path, 
+                        container_name, 
+                        clone_result["commit_hash"],
+                        build_args=build_args if build_args else None 
+                    )
                 except Exception as e:
                     ProjectService.mark_component_failed(
                         db, component.id, f"Erreur build: {e}", fail_reason=FailReason.BUILD_ERROR
