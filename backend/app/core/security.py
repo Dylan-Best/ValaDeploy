@@ -1,4 +1,6 @@
-from cryptography.fernet import Fernet
+import binascii
+
+from cryptography.fernet import Fernet, InvalidToken
 from app.core.config import settings
 from pwdlib import PasswordHash
 import jwt
@@ -25,8 +27,23 @@ def encrypt_data(data: str) -> str:
     return encrypted_data.decode()  # Convert bytes back to string
 
 def decrypt_data(encrypted_data: str) -> str:
-    decrypted_data = my_fernet.decrypt(encrypted_data.encode())
-    return decrypted_data.decode()  
+    """
+    Déchiffre une donnée. 
+    Si la donnée n'est pas chiffrée (ou est corrompue), la retourne telle quelle (fallback en clair).
+    """
+    if not encrypted_data:
+        return ""
+    
+    try:
+        # Tentative de déchiffrement normal
+        decrypted_bytes = my_fernet.decrypt(encrypted_data.encode())
+        return decrypted_bytes.decode()
+    
+    except (InvalidToken, binascii.Error, Exception):
+        # FALLBACK : Si ça échoue, c'est très probablement que la valeur 
+        # est déjà en texte clair (ex: une URL, un port, ou une variable non marquée comme secrète).
+        # On la retourne donc sans la modifier pour éviter de faire planter le déploiement.
+        return encrypted_data
 
 """ 
     Hash de password pour authentification

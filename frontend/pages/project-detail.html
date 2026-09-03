@@ -21,9 +21,9 @@
 <div>
 <div class="flex items-center gap-md mb-xs">
 <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface font-bold" id="project-name">loading...</h1>
-<div class="flex items-center gap-xs px-2 py-1 rounded bg-[#12B76A]/10 text-[#12B76A] border border-[#12B76A]/20">
-<span class="w-2 h-2 rounded-full bg-[#12B76A]"></span>
-<span class="font-label-sm text-label-sm uppercase tracking-wider">Running</span>
+<div id="status-badge-container" class="flex items-center gap-xs px-2 py-1 rounded bg-[#12B76A]/10 text-[#12B76A] border border-[#12B76A]/20">
+    <span id="status-dot" class="w-2 h-2 rounded-full bg-[#12B76A]"></span>
+    <span id="status-text" class="font-label-sm text-label-sm uppercase tracking-wider">Running</span>
 </div>
 </div>
 <div class="flex flex-wrap items-center gap-lg font-body-sm text-body-sm text-secondary">
@@ -144,9 +144,10 @@
 </div>
 </main>
 </div>
-<script src="../scripts/components.js"></script>
 <script src="../scripts/config.js"></script>
+<script src="../scripts/components.js"></script>
 <script src="../scripts/api/auth.js"></script>
+<script src="../scripts/api/project.js"></script>
 <script src="../scripts/api/log.js"></script>
 <script src="../scripts/project-detail.js"></script>
 </body></html>

@@ -143,3 +143,29 @@ def ensure_project_network(slug: str) -> str:
     except docker.errors.NotFound:
         client.networks.create(network_name, driver="bridge")
     return network_name
+
+def manage_container_state(container_id: str, action: str, project_slug: str) -> str:
+    """
+    Démarre, arrête ou redémarre un conteneur par son ID.
+    Résout le problème 'network not found' en s'assurant que le réseau 
+    du projet existe avant toute tentative de démarrage.
+    """
+    try:
+        container = client.containers.get(container_id)
+    except docker.errors.NotFound:
+        raise ValueError(f"Conteneur {container_id} introuvable dans Docker.")
+
+    # LA CLÉ : On s'assure que le réseau interne du projet existe avant start/restart
+    if action in ['start', 'restart']:
+        ensure_project_network(project_slug)
+
+    if action == 'start':
+        container.start()
+    elif action == 'stop':
+        container.stop()
+    elif action == 'restart':
+        container.restart()
+    else:
+        raise ValueError(f"Action '{action}' non supportée.")
+
+    return container.id

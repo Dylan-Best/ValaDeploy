@@ -1,116 +1,121 @@
-<!DOCTYPE html><html class="light" lang="en"><head>
-<meta charset="utf-8">
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>ValaDeploy Dashboard - Stacks</title>
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com" rel="preconnect">
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
-<!-- Material Symbols -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<script src="../styles/stacks.tailwind.config.js"></script>
-<link href="../styles/dashboard.css" rel="stylesheet">
-<link href="../styles/stacks.css" rel="stylesheet">
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>ValaDeploy Dashboard - Stacks</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <script src="../styles/stacks.tailwind.config.js"></script>
+    <link href="../styles/dashboard.css" rel="stylesheet">
+    <link href="../styles/stacks.css" rel="stylesheet">
 </head>
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="stacks">
-<!-- Shared Component: SideNavBar -->
-<div data-component="../components/sidebar.html"></div>
-<!-- Main Content Area -->
-<main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
-<div class="max-w-max-width mx-auto px-margin-desktop py-xl">
-<!-- Page Header -->
-<header class="flex justify-between items-center mb-lg">
-<div>
-<h1 class="font-headline-lg text-headline-lg text-on-surface">Stacks</h1>
-<p class="font-body-sm text-body-sm text-secondary mt-xs">Multi-service deployments: front, back and database in one.</p>
-</div>
-<div class="flex items-center gap-lg">
-    <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
-    <a href="new-project.html" class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
-        <span class="material-symbols-outlined text-[18px]">add</span>
-        New Project
-    </a>
-</div>
-</header>
 
-<!-- Onglets Projects / Stacks -->
-<nav class="flex gap-lg border-b border-outline-variant mb-xl">
-    <a href="dashboard.html" class="pb-sm border-b-2 border-transparent text-secondary hover:text-on-surface font-label-md text-label-md transition-colors">Projects</a>
-    <a href="stacks.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md">Stacks</a>
-</nav>
+    <!-- Shared Component: SideNavBar (inchangé, chargé tel quel) -->
+    <div data-component="../components/sidebar.html"></div>
 
-<!-- Statistics Grid -->
-<section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
-    <!-- Stat Card 1 -->
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-        <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">stacks</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Total Stacks</span>
+    <!-- Main Content Area -->
+    <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
+        <div class="max-w-max-width mx-auto px-margin-desktop py-xl">
+
+            <!-- Page Header (inchangé) -->
+            <header class="flex justify-between items-center mb-lg">
+                <div>
+                    <h1 class="font-headline-lg text-headline-lg text-on-surface">Stacks</h1>
+                    <p class="font-body-sm text-body-sm text-secondary mt-xs">Multi-service deployments: front, back and database in one.</p>
+                </div>
+                <div class="flex items-center gap-lg">
+                    <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
+                    <a href="new-stack.html" class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
+                        <span class="material-symbols-outlined text-[18px]">add</span>
+                        New Stack
+                    </a>
+                </div>
+            </header>
+
+            <!-- Onglets Projects / Stacks (inchangé) -->
+            <nav class="flex gap-lg border-b border-outline-variant mb-xl">
+                <a href="dashboard.html" class="pb-sm border-b-2 border-transparent text-secondary hover:text-on-surface font-label-md text-label-md transition-colors">Projects</a>
+                <a href="stacks.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md">Stacks</a>
+            </nav>
+
+            <!-- Statistics Grid (restylée façon nouveau design, ids conservés) -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
+                <!-- Stat Card 1 -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex items-center justify-between">
+                    <div>
+                        <p class="font-label-sm text-label-sm text-secondary uppercase mb-xs tracking-wider">Total Stacks</p>
+                        <p id="total-stacks" class="font-headline-md text-headline-md">0</p>
+                    </div>
+                    <div class="h-10 w-10 bg-surface-container rounded flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-secondary">stacks</span>
+                    </div>
+                </div>
+                <!-- Stat Card 2 -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex items-center justify-between">
+                    <div>
+                        <p class="font-label-sm text-label-sm text-secondary uppercase mb-xs tracking-wider">Running</p>
+                        <p id="running-stacks" class="font-headline-md text-headline-md">0</p>
+                    </div>
+                    <div class="h-10 w-10 bg-surface-container rounded flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[#12B76A]">check_circle</span>
+                    </div>
+                </div>
+                <!-- Stat Card 3 -->
+                <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex items-center justify-between">
+                    <div>
+                        <p class="font-label-sm text-label-sm text-secondary uppercase mb-xs tracking-wider">Failed</p>
+                        <p id="failed-stacks" class="font-headline-md text-headline-md text-error">0</p>
+                    </div>
+                    <div class="h-10 w-10 bg-error-container rounded flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-on-error-container">error</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stack List (accordéon, remplace la table) -->
+            <section id="stacks-list" class="space-y-md">
+
+                <!-- Loading state -->
+                <div id="loading-state" class="bg-surface-container-lowest border border-outline-variant rounded-lg py-lg text-center text-secondary">
+                    <div class="flex items-center justify-center gap-sm">
+                        <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+                        Chargement des stacks...
+                    </div>
+                </div>
+
+                <!-- Empty state -->
+                <div id="empty-state" class="bg-surface-container-lowest border border-outline-variant rounded-lg py-xl text-center text-secondary" style="display: none;">
+                    <span class="material-symbols-outlined text-4xl block mb-sm">layers_clear</span>
+                    <p>Aucune stack pour le moment</p>
+                    <a href="new-stack.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90">
+                        Déployer votre première stack
+                    </a>
+                </div>
+
+                <!-- Les stack-card sont injectées ici en JS -->
+            </section>
+
         </div>
-        <div id="total-stacks" class="font-display text-display text-on-surface">0</div>
-    </div>
-    <!-- Stat Card 2 -->
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-        <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">check_circle</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Running</span>
-        </div>
-        <div id="running-stacks" class="font-display text-display text-on-surface">0</div>
-    </div>
-    <!-- Stat Card 3 -->
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-        <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">error</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Failed</span>
-        </div>
-        <div id="failed-stacks" class="font-display text-display text-error">0</div>
-    </div>
-</section>
+    </main>
 
-<!-- Stack List Table -->
-<section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
-    <div class="w-full overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="border-b border-outline-variant bg-surface-container-low">
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Stack</th>
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Status</th>
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Components</th>
-                    <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Created</th>
-                    <th class="py-md px-lg text-right"></th>
-                </tr>
-            </thead>
-            <tbody class="font-body-sm text-body-sm text-on-surface" id="stacks-table-body">
-                <!-- Les stacks seront chargées dynamiquement ici -->
-                <tr id="loading-row">
-                    <td colspan="5" class="py-lg text-center text-secondary">
-                        <div class="flex items-center justify-center gap-sm">
-                            <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                            Chargement des stacks...
-                        </div>
-                    </td>
-                </tr>
-                <tr id="empty-row" style="display: none;">
-                    <td colspan="5" class="py-xl text-center text-secondary">
-                        <span class="material-symbols-outlined text-4xl block mb-sm">layers_clear</span>
-                        <p>Aucune stack pour le moment</p>
-                        <a href="new-project.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90">
-                            Déployer votre première stack
-                        </a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-</div>
-</main>
-
-<!-- Scripts -->
-<script src="../scripts/api/auth.js"></script>
-<script src="../scripts/api/project.js"></script>
-<script src="../scripts/components.js"></script>
-<script src="../scripts/stacks.js"></script>
-</body></html>
+    <!-- Scripts -->
+    <script src="../scripts/api/auth.js"></script>
+    <script src="../scripts/api/project.js"></script>
+    <script src="../scripts/api/stack.js"></script>
+    <script src="../scripts/components.js"></script>
+    <script src="../scripts/stacks.js"></script>
+</body>
+</html>

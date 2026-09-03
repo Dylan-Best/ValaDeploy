@@ -1,86 +1,68 @@
-/* stacks.css — styles spécifiques à la page Stacks.
+/* stacks.css — styles spécifiques à la page Stacks (design accordéon).
    Les classes .status-badge / .status-dot / .status-running etc. viennent
    de dashboard.css (chargé avant ce fichier dans stacks.html), pas dupliquées ici. */
 
-.stack-row[aria-expanded="true"] {
+/* ---------- Carte de stack (article accordéon) ---------- */
+
+.stack-card {
+    transition: box-shadow 0.15s ease;
+}
+
+.stack-card-header {
+    user-select: none;
+}
+
+.stack-card[data-expanded="true"] .stack-card-header {
     background-color: #f0f3ff; /* surface-container-low */
 }
 
-.stack-row[aria-expanded="true"] .stack-name {
+.stack-card[data-expanded="true"] .stack-name {
     color: #a73a00; /* primary */
 }
 
-.stack-toggle {
+.stack-name {
+    transition: color 0.15s ease;
+}
+
+.stack-toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.stack-card[data-expanded="true"] .stack-toggle-icon {
+    transform: rotate(90deg);
+}
+
+/* ---------- Bouton supprimer une stack ---------- */
+
+.stack-delete-btn {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.stack-toggle:hover {
-    background-color: #dfe8ff; /* surface-container-high */
-}
-
-.stack-toggle:focus-visible {
+.stack-delete-btn:focus-visible {
     outline: 2px solid #a73a00;
     outline-offset: 2px;
 }
 
-.toggle-icon {
-    transition: transform 0.2s ease;
+.stack-delete-btn:disabled {
+    cursor: not-allowed;
 }
 
-.stack-toggle[aria-expanded="true"] .toggle-icon {
-    transform: rotate(180deg);
-}
+/* ---------- Corps déplié (composants) ---------- */
 
-.stack-detail-row td {
+.stack-card-body {
     animation: detail-fade-in 0.18s ease;
 }
 
 @keyframes detail-fade-in {
     from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Panneau des composants : lignes reliées par un connecteur en arbre */
-.components-panel {
-    padding-block: 4px;
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .component-row {
-    position: relative;
-    padding-left: 40px;
-}
-
-.component-row::before {
-    content: "";
-    position: absolute;
-    left: 18px;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: #e4beb1; /* outline-variant */
-}
-
-.component-row:last-child::before {
-    bottom: 50%;
-}
-
-.component-row::after {
-    content: "";
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    width: 14px;
-    height: 1px;
-    background: #e4beb1;
+    transition: background-color 0.15s ease;
 }
 
 .component-kind-pill {
@@ -91,4 +73,24 @@
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.02em;
+    text-transform: capitalize;
+}
+
+/* Lien "Voir" — visible au survol de la ligne composant */
+.component-view-link {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.component-row:hover .component-view-link {
+    opacity: 1;
+}
+
+/* Lien "View Build Logs" — affiché uniquement si le composant est en échec */
+.view-logs-link {
+    transition: opacity 0.15s ease;
+}
+
+.view-logs-link:hover {
+    opacity: 0.8;
 }

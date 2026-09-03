@@ -1,79 +1,88 @@
 // scripts/api/project.js
-// API pour les projets - FONCTIONS GLOBALES
+// API pour les projets et les stacks - FONCTIONS GLOBALES
+
+// Fallback robuste : utilise API_BASE_URL si défini, sinon l'origine actuelle
+const VALA_API_URL = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : window.location.origin;
 
 function getProjects() {
-    // Récupère la liste des projets de l'utilisateur
     return fetchWithAutoRefresh(function(token) {
-        return fetch('http://app.localhost:8080/api/projects', {
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
-        })
-        .then(handleResponse); // handleResponse est dans auth.js
+        return fetch(`${VALA_API_URL}/api/projects`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
     });
 }
 
 function createProject(projectData) {
-    // projectData = { slug, repo_url, branch, replica, envs_var }
     return fetchWithAutoRefresh(function(token) {
-        return fetch('http://app.localhost:8080/api/deploy', {
+        return fetch(`${VALA_API_URL}/api/deploy`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token
             },
             body: JSON.stringify(projectData)
-        })
-        .then(handleResponse);
+        }).then(handleResponse);
     });
 }
 
 function getDeployStatus(projectId) {
-    // Récupère le statut d'un déploiement en cours
     return fetchWithAutoRefresh(function(token) {
-        return fetch(`http://app.localhost:8080/api/deploy/${projectId}/status`, {
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
-        })
-        .then(handleResponse);
+        return fetch(`${VALA_API_URL}/api/deploy/${projectId}/status`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
     });
 }
 
 function getDashboardStats() {
-    // Récupère les statistiques agrégées (total, running, failed, % vulns)
     return fetchWithAutoRefresh(function(token) {
-        return fetch('http://app.localhost:8080/api/projects/dashboard/stats', {
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
-        })
-        .then(handleResponse);
+        return fetch(`${VALA_API_URL}/api/projects/dashboard/stats`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
     });
 }
 
 // ---------- STACKS ----------
 
 function getStacks() {
-    // Récupère la liste résumée de toutes les stacks de l'utilisateur (1 ligne/stack)
     return fetchWithAutoRefresh(function(token) {
-        return fetch('http://app.localhost:8080/api/deploy/stacks', {
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
-        })
-        .then(handleResponse);
+        return fetch(`${VALA_API_URL}/api/deploy/stacks`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
     });
 }
 
 function getStackDetail(projectId) {
-    // Récupère le détail des composants d'une stack (statut individuel front/back/database)
     return fetchWithAutoRefresh(function(token) {
-        return fetch(`http://app.localhost:8080/api/deploy/stack/${projectId}/status`, {
+        return fetch(`${VALA_API_URL}/api/deploy/stack/${projectId}/status`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
+    });
+}
+
+function deleteStack(projectId) {
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(`${VALA_API_URL}/api/deploy/stack/${projectId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
+    });
+}
+
+// ---------- ACTIONS (Start / Stop / Restart) ----------
+
+function executeProjectAction(slug, action, componentId) {
+    let url = `${VALA_API_URL}/api/projects/${slug}/action?action=${action}`;
+    if (componentId) {
+        url += `&component_id=${componentId}`;
+    }
+
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(url, {
+            method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + token
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
             }
-        })
-        .then(handleResponse);
+        }).then(handleResponse);
     });
 }

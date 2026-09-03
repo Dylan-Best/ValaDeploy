@@ -5,12 +5,19 @@
 // (project-detail.js) branche sur l'UI. Dépend de auth.js (refreshAccessToken,
 // currentAccessToken) et de config.js (WS_BASE_URL).
 
-function connectLogsWebSocket(slug, accessToken, callbacks = {}) {
+function connectLogsWebSocket(slug, componentId, accessToken, callbacks = {}) {
   const { onOpen, onMessage, onClose, onTokenExpired, onError } = callbacks;
 
-  const ws = new WebSocket(
-    `${WS_BASE_URL}/api/logs/${slug}?token=${encodeURIComponent(accessToken)}`
-  );
+  // Construction propre de l'URL avec les paramètres de requête
+  const wsUrl = new URL(`${WS_BASE_URL}/api/logs/${slug}`);
+  wsUrl.searchParams.append('token', accessToken);
+  
+  // Ajoute component_id uniquement s'il est fourni (mode multi-composants)
+  if (componentId) {
+    wsUrl.searchParams.append('component_id', componentId);
+  }
+
+  const ws = new WebSocket(wsUrl.toString());
 
   ws.onopen = () => {
     onOpen?.();

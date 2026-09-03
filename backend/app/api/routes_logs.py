@@ -9,13 +9,17 @@ from app.core.security import decode_token
 from app.core.exceptions import ContainerNotFoundError
 from app.services.logs_service import stream_container_logs
 from app.services.project_service import ProjectService
+from app.models.project import ProjectComponent
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.websocket("/logs/{slug}")
-async def websocket_logs(websocket: WebSocket, slug: str, token: str = Query(...)):
+async def websocket_logs(websocket: WebSocket, 
+                         slug: str, 
+                         token: str = Query(...),
+                         component_id: str = Query(None)):
     try:
         payload = decode_token(token)
         user_id = int(payload["sub"])
@@ -27,18 +31,48 @@ async def websocket_logs(websocket: WebSocket, slug: str, token: str = Query(...
     db = Session_local()
     try:
         project = ProjectService.get_project_by_slug(db, slug)
-        if project is None:
-            logger.warning("WS logs %s: aucun projet trouvé pour ce slug", slug)
+        if project is None or project.user_id != user_id:
+            logger.warning("WS logs %s: projet introuvable ou non autorisé", slug)
             await websocket.close(code=4404)
             return
-        if project.user_id != user_id:
-            logger.warning(
-                "WS logs %s: user_id mismatch (token=%s, projet=%s)",
-                slug, user_id, project.user_id
-            )
-            await websocket.close(code=4404)
-            return
-        container_ref = project.container_ids[0]  # premier conteneur du projet
+        
+        # --- LOGIQUE MULTI-COMPOSANT ---
+        if component_id:
+            component = db.query(ProjectComponent).filter(
+                ProjectComponent.id == component_id,
+                ProjectComponent.project_id == project.id # Sécurité : vérifier qu'il appartient à ce projet
+            ).first()
+            
+            if not component:
+                await websocket.accept()
+                await websocket.send_json({"type": "error", "message": "Composant introuvable."})
+                await websocket.close()
+                return
+
+            if not component.container_ids:
+                await websocket.accept()
+                await websocket.send_json({
+                    "type": "info",
+                    "message": "Build en cours pour ce composant. Les logs arriveront bientôt."
+                })
+                await websocket.close()
+                return
+            
+            container_ref = component.container_ids[0] # On prend le premier conteneur du composant
+            
+        # --- LOGIQUE MONO-PROJET (Fallback) ---
+        else:
+            if not project.container_ids:
+                await websocket.accept()
+                await websocket.send_json({
+                    "type": "info",
+                    "message": "Le déploiement est en cours. Les logs du conteneur seront disponibles une fois le build terminé."
+                })
+                await websocket.close()
+                return
+            
+            container_ref = project.container_ids[0]
+    
     finally:
         db.close()
 
