@@ -1,25 +1,42 @@
-# app/api/routes_logs.py
+#app/api/routes_logs.py
+
 import asyncio
 import logging
-
+import os
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-
 from app.db.database import Session_local
 from app.core.security import decode_token
 from app.core.exceptions import ContainerNotFoundError
 from app.services.logs_service import stream_container_logs
 from app.services.project_service import ProjectService
-from app.models.project import ProjectComponent
+from app.models.project import ProjectComponent, ProjectStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+async def stream_file_logs_tail(file_path: str):
+    """Lit un fichier de log en temps réel (équivalent à tail -f)"""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        f.seek(0, os.SEEK_END)
+        while True:
+            line = f.readline()
+            if not line:
+                await asyncio.sleep(0.5)
+                continue
+            yield line
 
 @router.websocket("/logs/{slug}")
-async def websocket_logs(websocket: WebSocket, 
-                         slug: str, 
-                         token: str = Query(...),
-                         component_id: str = Query(None)):
+async def websocket_logs(websocket: WebSocket,
+                          slug: str,
+                          token: str = Query(None),
+                          component_id: str = Query(None)):
+    if not token:
+        token = websocket.cookies.get("access_token")
+    if not token:
+        logger.warning("WS logs %s: token manquant", slug)
+        await websocket.close(code=4401)
+        return
+    
     try:
         payload = decode_token(token)
         user_id = int(payload["sub"])
@@ -36,77 +53,59 @@ async def websocket_logs(websocket: WebSocket,
             await websocket.close(code=4404)
             return
         
-        # --- LOGIQUE MULTI-COMPOSANT ---
+        container_ref = None
         if component_id:
             component = db.query(ProjectComponent).filter(
-                ProjectComponent.id == component_id,
-                ProjectComponent.project_id == project.id # Sécurité : vérifier qu'il appartient à ce projet
+                ProjectComponent.id == int(component_id),
+                ProjectComponent.project_id == project.id
             ).first()
-            
-            if not component:
-                await websocket.accept()
-                await websocket.send_json({"type": "error", "message": "Composant introuvable."})
-                await websocket.close()
-                return
-
-            if not component.container_ids:
-                await websocket.accept()
-                await websocket.send_json({
-                    "type": "info",
-                    "message": "Build en cours pour ce composant. Les logs arriveront bientôt."
-                })
-                await websocket.close()
-                return
-            
-            container_ref = component.container_ids[0] # On prend le premier conteneur du composant
-            
-        # --- LOGIQUE MONO-PROJET (Fallback) ---
+            if component and component.container_ids:
+                container_ref = component.container_ids[0]
         else:
-            if not project.container_ids:
-                await websocket.accept()
-                await websocket.send_json({
-                    "type": "info",
-                    "message": "Le déploiement est en cours. Les logs du conteneur seront disponibles une fois le build terminé."
-                })
-                await websocket.close()
-                return
-            
-            container_ref = project.container_ids[0]
-    
-    finally:
-        db.close()
+            if project.container_ids:
+                container_ref = project.container_ids[0]
 
-    await websocket.accept()
+        build_log_path = f"app/logs/build_{project.id}.log"
+        await websocket.accept()
 
-    async def watch_disconnect():
-        """Ne fait rien tant que la connexion est ouverte ; se termine dès
-        que le client part (fermeture d'onglet, reload, navigation)."""
-        try:
-            while True:
-                await websocket.receive_text()
-        except WebSocketDisconnect:
-            pass
+        # 1. Envoyer l'historique du build s'il existe (même si le build est fini)
+        if os.path.exists(build_log_path):
+            await websocket.send_text("---  Historique du pipeline de build ---\n")
+            try:
+                with open(build_log_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        await websocket.send_text(line)
+            except Exception as e:
+                logger.error(f"Erreur lecture historique log: {e}")
+            await websocket.send_text("\n---  Fin de l'historique ---\n")
 
-    async def send_logs():
-        try:
-            async for line in stream_container_logs(container_ref):
-                await websocket.send_text(line)
-        except ContainerNotFoundError:
-            await websocket.send_text("--- Conteneur introuvable ---")
+        # 2. Stream en temps réel selon l'état du projet
+        if project.status == ProjectStatus.BUILDING and os.path.exists(build_log_path):
+            await websocket.send_text("---  Stream du build en temps réel ---\n")
+            try:
+                async for line in stream_file_logs_tail(build_log_path):
+                    await websocket.send_text(line)
+            except Exception as e:
+                logger.error(f"Erreur stream fichier log: {e}")
+                
+        elif container_ref and project.status in [ProjectStatus.RUNNING, ProjectStatus.BUILDING]:
+            await websocket.send_text("---  Stream des logs du conteneur en direct ---\n")
+            try:
+                async for line in stream_container_logs(container_ref):
+                    await websocket.send_text(line)
+            except ContainerNotFoundError:
+                await websocket.send_text("--- Conteneur introuvable ou arrêté ---")
+        else:
+            await websocket.send_text("--- Le déploiement est terminé. Aucun stream actif. ---")
 
-    disconnect_task = asyncio.create_task(watch_disconnect())
-    logs_task = asyncio.create_task(send_logs())
-
-    try:
-        done, pending = await asyncio.wait(
-            {disconnect_task, logs_task}, return_when=asyncio.FIRST_COMPLETED
-        )
-        for task in pending:
-            task.cancel()
-    except Exception:
-        logger.exception("Erreur pendant le streaming des logs pour %s", slug)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.exception("Erreur WebSocket logs pour %s", slug)
     finally:
         try:
             await websocket.close()
         except Exception:
             pass
+        finally:
+            db.close()

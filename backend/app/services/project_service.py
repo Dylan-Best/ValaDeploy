@@ -394,3 +394,50 @@ class ProjectService:
             .filter(Project.id.in_(stack_project_ids))
             .all()
         )
+        
+        # Ajoute cette méthode à la classe ProjectService dans app/services/project_service.py
+
+    @staticmethod
+    def delete_project_and_containers(db: Session, project_id: int, user_id: int) -> bool:
+        """
+        Supprime un projet (ou une stack) : 
+        1. Arrête et supprime les conteneurs Docker associés.
+        2. Supprime l'entrée en base de données (cascade vers les composants).
+        """
+        project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
+        if not project:
+            return False
+
+        import docker
+        try:
+            client = docker.from_env()
+            
+            # 1. Nettoyer les conteneurs du projet parent (si mono-composant)
+            if project.container_ids:
+                for cid in project.container_ids:
+                    try:
+                        container = client.containers.get(cid)
+                        container.remove(force=True)
+                    except docker.errors.NotFound:
+                        pass
+            
+            # 2. Nettoyer les conteneurs de tous les composants (si stack multi-composants)
+            components = ProjectService.get_components_by_project(db, project_id)
+            for comp in components:
+                if comp.container_ids:
+                    for cid in comp.container_ids:
+                        try:
+                            container = client.containers.get(cid)
+                            container.remove(force=True)
+                        except docker.errors.NotFound:
+                            pass
+                            
+        except Exception as e:
+            # On log l'erreur mais on continue la suppression en BDD pour éviter les "zombies"
+            # (À remplacer par logging.exception plus tard selon ta roadmap)
+            print(f"Erreur nettoyage Docker pour {project.slug}: {e}")
+
+        # 3. Suppression en base de données (le cascade delete s'occupe des ProjectComponent)
+        db.delete(project)
+        db.commit()
+        return True

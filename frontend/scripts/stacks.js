@@ -91,6 +91,10 @@ function createStackCard(stack) {
                 <div class="font-body-sm text-body-sm text-secondary w-28 text-right hidden sm:block">
                     ${stack.component_count} composant${stack.component_count > 1 ? 's' : ''}
                 </div>
+                 <!-- NOUVEAU : Bouton Pipeline -->
+                <button class="stack-pipeline-btn text-secondary hover:text-primary p-xs rounded hover:bg-primary-container/30 transition-colors" title="Voir le pipeline" aria-label="Pipeline de ${escapeHtml(stack.slug)}">
+                    <span class="material-symbols-outlined text-[20px]">account_tree</span>
+                </button>
                 <button class="stack-delete-btn text-secondary hover:text-error p-xs rounded hover:bg-error-container/30" title="Supprimer la stack" aria-label="Supprimer ${escapeHtml(stack.slug)}">
                     <span class="material-symbols-outlined text-[20px]">delete</span>
                 </button>
@@ -108,6 +112,15 @@ function createStackCard(stack) {
     header.addEventListener('click', () => toggleStackDetail(stack.project_id));
 
     attachDeleteHandler(article, stack);
+
+    // Gestionnaire pour le bouton Pipeline
+    const pipelineBtn = article.querySelector('.stack-pipeline-btn');
+    if (pipelineBtn) {
+        pipelineBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Empêche d'ouvrir/fermer l'accordéon
+            window.location.href = `pipeline.html?project_id=${stack.project_id}&back_to=stacks.html`;
+        });
+    }
 
     return article;
 }

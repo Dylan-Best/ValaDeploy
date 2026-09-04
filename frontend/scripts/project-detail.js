@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initUserSession(
     (user, accessToken) => {
       currentToken = accessToken;
-      console.log("✅ Session valide, chargement pour:", currentSlug, currentComponentId ? `composant ${currentComponentId}` : 'projet complet');
+      console.log("Session valide, chargement pour:", currentSlug, currentComponentId ? `composant ${currentComponentId}` : 'projet complet');
       
       // 1. Récupérer et afficher le vrai statut depuis la BDD
       fetchAndSetInitialStatus(currentSlug, currentComponentId);
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setupControlButtons(currentSlug, currentComponentId);
     },
     (error) => {
-      console.error('❌ Erreur lors de l\'initialisation:', error);
+      console.error('Erreur lors de l\'initialisation:', error);
       if (error.message && (error.message.includes('Session expirée') || error.message.includes('401'))) {
          window.location.href = 'login.html';
       }
@@ -139,14 +139,17 @@ function setupControlButtons(slug, componentId) {
   const btnStart = document.getElementById('btn-start');
   const terminal = document.getElementById('log-terminal');
 
-  const callAction = async (action) => {
+    const callAction = async (action) => {
     // Désactiver les boutons
     [btnStop, btnRestart, btnStart].forEach(btn => { if(btn) btn.disabled = true; });
     appendLogLine(terminal, `--- Demande d'action: ${action.toUpperCase()} ---`, 'meta');
 
     try {
       const result = await executeProjectAction(slug, action, componentId);
-      appendLogLine(terminal, `--- SUCCÈS: ${result.message || 'Action réussie'} ---`, 'meta');
+      
+      //Gestion robuste : si result est null ou n'a pas de message, on met un message par défaut(sinon les logs ne continueront pas à s'afficher correctement)
+      const successMessage = (result && result.message) ? result.message : `Action '${action}' traitée avec succès`;
+      appendLogLine(terminal, `--- SUCCÈS: ${successMessage} ---`, 'meta');
       
       // 1. Mettre à jour le badge de statut immédiatement (optimiste)
       const newStatus = (action === 'stop') ? 'stopped' : 'running';
@@ -161,10 +164,10 @@ function setupControlButtons(slug, componentId) {
       }
       
     } catch (error) {
-      console.error(error);
-      appendLogLine(terminal, `--- ÉCHEC: ${error.message} ---`, 'error');
+      console.error("Erreur détaillée lors de l'action:", error);
+      appendLogLine(terminal, `--- ÉCHEC: ${error.message || 'Erreur inconnue du serveur'} ---`, 'error');
     } finally {
-      // Réactiver les boutons
+      // Réactiver les boutons dans tous les cas
       [btnStop, btnRestart, btnStart].forEach(btn => { if(btn) btn.disabled = false; });
     }
   };

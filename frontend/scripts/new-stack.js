@@ -255,9 +255,9 @@ async function handleStackSubmit(event) {
         console.log("Réponse du serveur:", response);
         alert(`Stack "${slug}" enregistrée et déploiement lancé !`);
         
-        // Redirection vers la page de détail en utilisant le project_id retourné par le backend
-        // Ou vers stacks.html si tu préfères. Ici je mets project-detail.html comme dans ton contexte initial
-        window.location.href = `project-detail.html?slug=${slug}`;
+        // Redirection vers la page de pipeline en utilisant le project_id retourné par le backend
+
+        window.location.href = `pipeline.html?project_id=${response.project_id}`;
 
     } catch (error) {
         console.error("Erreur de déploiement:", error);

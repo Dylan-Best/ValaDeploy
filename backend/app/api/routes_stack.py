@@ -1,3 +1,5 @@
+# app/api/routes_stack.py
+
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
@@ -94,10 +96,28 @@ async def list_stacks(db: Session = Depends(get_db), current_user: User = Depend
     result = []
     for project in stacks:
         components = ProjectService.get_components_by_project(db, project.id)
+        
+        # On récupère les valeurs des enums sous forme de chaîne pour comparaison
+        comp_statuses = [c.status.value if hasattr(c.status, 'value') else str(c.status) for c in components]
+        
+        if 'building' in comp_statuses:
+            aggregated_status = ProjectStatus.BUILDING
+        elif 'failed' in comp_statuses:
+            aggregated_status = ProjectStatus.FAILED
+        elif 'running' in comp_statuses:
+            aggregated_status = ProjectStatus.RUNNING
+        else:
+            aggregated_status = ProjectStatus.STOPPED
+            
+        # Mise à jour du statut en BDD pour maintenir la cohérence
+        if project.status != aggregated_status:
+            project.status = aggregated_status
+            db.commit()
+            
         result.append({
             "project_id": project.id,
             "slug": project.slug,
-            "status": project.status,
+            "status": aggregated_status.value if hasattr(aggregated_status, 'value') else aggregated_status,
             "created_at": project.created_at,
             "component_count": len(components),
         })
@@ -133,3 +153,23 @@ async def get_stack_status(
             for c in components
         ],
     }
+    
+@router.delete("/deploy/stack/{project_id}")
+async def delete_stack(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Supprime une stack, ses conteneurs Docker et ses entrées en base de données."""
+    # Vérification de l'appartenance
+    project = ProjectService.get_project_by_id(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Stack introuvable ou accès non autorisé")
+
+    # Appel au service pour nettoyer Docker + BDD
+    success = ProjectService.delete_project_and_containers(db, project_id, current_user.id)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Erreur lors de la suppression de la stack")
+
+    return {"message": "Stack supprimée avec succès"}

@@ -8,13 +8,20 @@ from app.api.routes_auth import router as auth_router
 from app.api.routes_projects import router as project_router
 from app.api.routes_security import router as security_router
 from app.api.routes_stack import router as stack_router
-
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title=settings.APP_NAME,
     description="Projet de memoire",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://app.localhost:8080", "http://localhost:8080"],  # Tes domaines
+    allow_credentials=True,  # OBLIGATOIRE pour les cookies httpOnly
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(deploy_router, prefix="/api")
 app.include_router(stack_router, prefix="/api")

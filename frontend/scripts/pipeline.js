@@ -1,34 +1,54 @@
 // scripts/pipeline.js
-// Suivi en direct d'un pipeline de déploiement : stepper + terminal de logs.
-// La page est atteinte via redirection après déploiement d'une stack ou d'un
-// mono-projet, avec l'id du projet en query string : pipeline.html?project_id=123
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 3000;
 const TERMINAL_STATUSES = ['success', 'failed', 'cancelled'];
 
 let pollTimer = null;
+let ws = null;
 let currentProjectId = null;
-let renderedLogCount = 0;
+let currentSlug = null;
 let userScrolledUp = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initUserSession(
-        () => {
+        async () => {
             const params = new URLSearchParams(window.location.search);
             currentProjectId = params.get('project_id');
 
-            // Lien retour : personnalisable via ?back_to=stacks.html par exemple
+            // Filet de sécurité : si l'URL a perdu son paramètre (ex: restauration
+            // navigateur depuis le cache), on retombe sur le dernier projet visité.
+            if (!currentProjectId) {
+                currentProjectId = sessionStorage.getItem('lastPipelineProjectId');
+                if (currentProjectId) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('project_id', currentProjectId);
+                    window.history.replaceState({}, '', url);
+                }
+            }
+
             const backLink = document.getElementById('back-link');
-            if (backLink) backLink.href = params.get('back_to') || 'dashboard.html';
+            if (backLink) backLink.href = params.get('back_to') || 'stacks.html';
 
             if (!currentProjectId) {
                 showFatalError('Aucun projet spécifié (paramètre project_id manquant).');
                 return;
             }
 
+            sessionStorage.setItem('lastPipelineProjectId', currentProjectId);
+
             setupTerminalScrollTracking();
             setupActionButtons();
-            pollPipeline();
+            
+            // 1. Récupérer les détails initiaux (slug, status, steps)
+            const data = await getPipelineStatus(currentProjectId);
+            currentSlug = data.project.slug;
+            renderPipeline(data);
+
+            // 2. Ouvrir le WebSocket pour les VRAIS logs
+            connectWebSocket(currentSlug);
+
+            // 3. Lancer le polling pour mettre à jour le stepper (statuts) SEULEMENT
+            pollTimer = setInterval(() => pollPipeline(), POLL_INTERVAL_MS);
         },
         (error) => {
             console.log('Session invalide ou expirée :', error.message);
@@ -37,37 +57,81 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 });
 
+function connectWebSocket(slug) {
+    ws = connectLogsWebSocket(slug, null, currentAccessToken, {
+        onOpen: () => {
+            const body = document.getElementById('terminal-body');
+            if (body) body.innerHTML = '';
+            appendLog("[SYSTÈME] Connexion aux logs en temps réel établie...\n");
+        },
+        onMessage: (data) => appendLog(data),
+        onClose: (event) => {
+            if (event.code === 1000 || event.code === 1001) {
+                appendLog("\n[SYSTÈME] Stream de logs terminé.");
+            } else {
+                appendLog(`\n[SYSTÈME] Connexion fermée (code ${event.code}).`);
+            }
+        },
+        onTokenExpired: (newToken) => {
+            appendLog("\n[SYSTÈME] Session rafraîchie, reconnexion...");
+            connectWebSocket(slug); // reconnecte avec le nouveau token, une seule fois
+        },
+        onError: (err) => {
+            console.error("Erreur WebSocket:", err);
+            appendLog("[ERREUR] Échec de la connexion au serveur de logs.");
+        }
+    });
+}
+
+function appendLog(text) {
+    const body = document.getElementById('terminal-body');
+    if (!body) return;
+
+    const div = document.createElement('div');
+    div.className = 'opacity-90 whitespace-pre-wrap break-words font-mono-code text-label-md text-[#b4c4de] leading-relaxed';
+    div.textContent = text;
+    body.appendChild(div);
+
+    if (!userScrolledUp) {
+        body.scrollTop = body.scrollHeight;
+    }
+}
+
 function pollPipeline() {
     getPipelineStatus(currentProjectId)
         .then(data => {
-            renderPipeline(data);
-
-            if (!TERMINAL_STATUSES.includes(data.status)) {
-                pollTimer = setTimeout(pollPipeline, POLL_INTERVAL_MS);
+            currentSlug = data.project.slug;
+            renderHeader(data);
+            renderSteps(data.steps || []);
+            renderActions(data);
+            
+            if (TERMINAL_STATUSES.includes(data.status)) {
+                clearInterval(pollTimer);
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.close(1000, "Pipeline terminé");
+                }
             }
         })
         .catch(error => {
             console.error('Erreur de récupération du pipeline:', error);
-            // On retente quand même après un délai, la panne peut être transitoire
-            pollTimer = setTimeout(pollPipeline, POLL_INTERVAL_MS);
         });
 }
 
 function renderPipeline(data) {
     renderHeader(data);
     renderSteps(data.steps || []);
-    renderLogs(data.logs || []);
     renderActions(data);
+    // NOTE: On NE FAIT PAS renderLogs(data.logs) ici pour éviter d'afficher les mocks !
+    // Les logs viennent exclusivement du WebSocket.
 }
 
 function renderHeader(data) {
     const project = data.project || {};
-
     const slugEl = document.getElementById('pipeline-slug');
     if (slugEl) slugEl.textContent = project.slug || '—';
 
     const envEl = document.getElementById('pipeline-environment');
-    if (envEl) envEl.textContent = project.environment || '—';
+    if (envEl) envEl.textContent = project.environment || 'local';
 
     const commitEl = document.getElementById('pipeline-commit');
     if (commitEl) commitEl.textContent = project.commit_sha ? `#${project.commit_sha.substring(0, 7)}` : '—';
@@ -131,16 +195,11 @@ function renderSteps(steps) {
 
 function getStepIconMarkup(status) {
     switch (status) {
-        case 'completed':
-            return `<span class="material-symbols-outlined text-[18px]">check</span>`;
-        case 'active':
-            return `<div class="step-dot"></div><div class="step-icon-glow"></div>`;
-        case 'failed':
-            return `<span class="material-symbols-outlined text-[16px]">close</span>`;
-        case 'cancelled':
-            return `<span class="material-symbols-outlined text-[16px]">block</span>`;
-        default: // pending
-            return `<span class="material-symbols-outlined text-[16px]">pending</span>`;
+        case 'completed': return `<span class="material-symbols-outlined text-[18px]">check</span>`;
+        case 'active': return `<div class="step-dot"></div><div class="step-icon-glow"></div>`;
+        case 'failed': return `<span class="material-symbols-outlined text-[16px]">close</span>`;
+        case 'cancelled': return `<span class="material-symbols-outlined text-[16px]">block</span>`;
+        default: return `<span class="material-symbols-outlined text-[16px]">pending</span>`;
     }
 }
 
@@ -155,35 +214,6 @@ function getStepFooterMarkup(step) {
         return `<span class="font-mono-code text-label-sm text-error mt-2">Failed</span>`;
     }
     return '';
-}
-
-function renderLogs(logs) {
-    const body = document.getElementById('terminal-body');
-    if (!body) return;
-
-    // On ne rend que les nouvelles lignes reçues depuis le dernier poll
-    if (renderedLogCount === 0 && logs.length === 0) return;
-
-    if (renderedLogCount === 0) {
-        body.innerHTML = '';
-    }
-
-    const newLines = logs.slice(renderedLogCount);
-    if (newLines.length === 0) return;
-
-    const fragment = document.createDocumentFragment();
-    newLines.forEach(line => {
-        const div = document.createElement('div');
-        div.className = 'opacity-90';
-        div.textContent = line;
-        fragment.appendChild(div);
-    });
-    body.appendChild(fragment);
-    renderedLogCount = logs.length;
-
-    if (!userScrolledUp) {
-        body.scrollTop = body.scrollHeight;
-    }
 }
 
 function renderActions(data) {
@@ -223,8 +253,10 @@ function setupActionButtons() {
             retryBtn.disabled = true;
             retryBuild(currentProjectId)
                 .then(() => {
-                    renderedLogCount = 0;
-                    clearTimeout(pollTimer);
+                    const body = document.getElementById('terminal-body');
+                    if (body) body.innerHTML = ''; // Clear logs on retry
+                    if (ws) ws.close();
+                    connectWebSocket(currentSlug);
                     pollPipeline();
                 })
                 .catch(error => alert(`Erreur lors de la relance : ${error.message || 'Erreur inconnue'}`))
@@ -241,7 +273,7 @@ function setupActionButtons() {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `build-log-${currentProjectId}.txt`;
+            a.download = `build-log-${currentSlug || currentProjectId}.txt`;
             a.click();
             URL.revokeObjectURL(url);
         });
@@ -281,4 +313,11 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
 }
