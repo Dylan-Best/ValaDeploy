@@ -1,3 +1,4 @@
+//scripts/register.js
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('form');
   const username = document.getElementById('full-name');
@@ -25,10 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
       registerUser(username.value, email.value, password.value, confirmPassword.value)
         .then(data => {
           console.log('Registration successful:', data);
-          window.location.href = "login.html";
+          ValaToast.show({ type: 'success', title: 'Compte créé !', message: 'Vous allez être redirigé vers la page de connexion.' });
+          setTimeout(() => { window.location.href = "login.html"; }, 1500);
         })
         .catch(error => {
-          alert(error.message);
+          ValaToast.show({ type: 'error', title: 'Erreur d\'inscription', message: error.message || 'Vérifiez vos informations.' });
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
         });

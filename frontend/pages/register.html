@@ -10,9 +10,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script src="../styles/register.tailwind.config.js"></script>
 <link href="../styles/register.css" rel="stylesheet">
+<link rel="stylesheet" href="/styles/toast.css"> 
 </head>
 <body class="min-h-screen flex flex-col md:flex-row font-body-sm text-body-sm antialiased bg-surface">
-<div class="hidden md:flex md:w-1/2 bg-on-surface items-center justify-center p-xl relative overflow-hidden">
+    <div data-component="../components/toast-container.html"></div>
+    <div class="hidden md:flex md:w-1/2 bg-on-surface items-center justify-center p-xl relative overflow-hidden">
 <div class="relative z-10 text-center">
 <div class="mb-lg flex justify-center">
 <div class="w-16 h-16 bg-primary flex items-center justify-center rounded-xl">
@@ -81,5 +83,6 @@
 </div>
 <script src="../scripts/config.js"></script>
 <script src="../scripts/api/auth.js"></script>
+<script src="../scripts/toast.js"></script>
 <script src="../scripts/register.js"></script>
 </body></html>

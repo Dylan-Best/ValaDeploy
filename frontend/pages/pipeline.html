@@ -20,11 +20,13 @@
     <script src="../styles/pipeline.tailwind.config.js"></script>
     <link href="../styles/dashboard.css" rel="stylesheet">
     <link href="../styles/pipeline.css" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/toast.css"> 
 </head>
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="pipeline">
 
     <!-- Shared Component: SideNavBar (inchangé, chargé tel quel) -->
     <div data-component="../components/sidebar.html"></div>
+    <div data-component="../components/toast-container.html"></div>
 
     <!-- Main Content Area -->
     <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
@@ -117,6 +119,7 @@
 <script src="../scripts/api/pipeline.js"></script>
 <script src="../scripts/api/log.js"></script>
 <script src="../scripts/components.js"></script>
+<script src="../scripts/toast.js"></script>
 <script src="../scripts/pipeline.js"></script>
 </body>
 </html>

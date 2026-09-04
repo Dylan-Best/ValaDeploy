@@ -1,5 +1,5 @@
 // Comportement de la page Security Report.
-
+//scripts/security-details.js
 document.addEventListener('DOMContentLoaded', () => {
     const slug = new URLSearchParams(window.location.search).get('slug') || 'unknown-project';
     document.getElementById('project-slug').textContent = slug;

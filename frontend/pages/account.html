@@ -14,8 +14,11 @@
 
 <!-- Styles custom -->
 <link href="../styles/account.css" rel="stylesheet"/>
+<link rel="stylesheet" href="../styles/toast.css"> 
 </head>
 <body class="antialiased text-on-surface" data-page="account">
+
+<div data-component="../components/toast-container.html"></div>
 
 <!-- Wrapper isolant la mise en page (flex + min-h-screen) du <body> global,
      pour ne pas casser d'autres pages qui réutiliseraient un <body> différent. -->
@@ -135,10 +138,12 @@
 <!-- Composant modal de confirmation (chargé une seule fois par page) -->
 <div data-component="../components/confirm-modal.html"></div>
 
+
 <!-- Script de chargement des composants -->
  
 <script src="../scripts/config.js"></script>
 <script src="../scripts/components.js"></script>
+<script src="../scripts/toast.js"></script>
 <script src="../scripts/confirm-modal.js"></script>
 <script src="../scripts/api/auth.js"></script>
 <script src="../scripts/account.js"></script>

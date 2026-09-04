@@ -9,9 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSecurityTable(reports);
             } catch (error) {
                 console.error('Erreur chargement rapports de sécurité:', error);
+                
+                // Notification d'erreur
+                ValaToast.show({ type: 'error', title: 'Erreur de chargement', message: 'Impossible de récupérer les rapports de sécurité.' });
+                
                 document.getElementById('security-table-body').innerHTML = `
-                    <tr><td colspan="6" class="py-lg text-center text-error">
-                        Erreur de chargement: ${error.message || 'Erreur inconnue'}
+                    <tr><td colspan="6" class="py-lg text-center text-on-surface-variant">
+                        Impossible d'afficher les données de sécurité pour le moment.
                     </td></tr>`;
             }
         },

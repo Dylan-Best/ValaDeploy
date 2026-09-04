@@ -151,6 +151,13 @@ function setupControlButtons(slug, componentId) {
       const successMessage = (result && result.message) ? result.message : `Action '${action}' traitée avec succès`;
       appendLogLine(terminal, `--- SUCCÈS: ${successMessage} ---`, 'meta');
       
+      const actionLabel = action === 'stop' ? 'arrêté' : (action === 'start' ? 'démarré' : 'redémarré');
+      ValaToast.show({ 
+          type: 'success', 
+          title: 'Action réussie', 
+          message: `Le conteneur a bien été ${actionLabel}.` 
+      });
+
       // 1. Mettre à jour le badge de statut immédiatement (optimiste)
       const newStatus = (action === 'stop') ? 'stopped' : 'running';
       updateStatusUI(newStatus);
@@ -166,6 +173,11 @@ function setupControlButtons(slug, componentId) {
     } catch (error) {
       console.error("Erreur détaillée lors de l'action:", error);
       appendLogLine(terminal, `--- ÉCHEC: ${error.message || 'Erreur inconnue du serveur'} ---`, 'error');
+      ValaToast.show({ 
+          type: 'error', 
+          title: 'Échec de l\'action', 
+          message: error.message || 'Le serveur a refusé l\'action.' 
+      });
     } finally {
       // Réactiver les boutons dans tous les cas
       [btnStop, btnRestart, btnStart].forEach(btn => { if(btn) btn.disabled = false; });

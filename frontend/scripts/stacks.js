@@ -20,11 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderStacks(stacks);
             } catch (error) {
                 console.error('Erreur chargement stacks:', error);
+                ValaToast.show({ type: 'error', title: 'Erreur de chargement', message: 'Impossible de récupérer la liste des stacks.' });
                 const loadingState = document.getElementById('loading-state');
                 if (loadingState) {
                     loadingState.innerHTML = `
-                        <div class="py-lg text-center text-error">
-                            Erreur de chargement des stacks: ${error.message || 'Erreur inconnue'}
+                        <div class="py-lg text-center text-on-surface-variant">
+                            Impossible d'afficher les stacks pour le moment.
                         </div>
                     `;
                 }
@@ -148,9 +149,10 @@ async function toggleStackDetail(projectId) {
             const detail = await getStackDetail(projectId);
             componentDetailCache[projectId] = detail;
         } catch (error) {
+            ValaToast.show({ type: 'error', title: 'Erreur', message: 'Impossible de charger les détails des composants.' });
             body.innerHTML = `
-                <div class="py-md px-lg text-center text-error text-body-sm">
-                    Erreur de chargement: ${error.message || 'Erreur inconnue'}
+                <div class="py-md px-lg text-center text-on-surface-variant text-body-sm">
+                    Impossible de charger les détails.
                 </div>
             `;
             return;
@@ -234,12 +236,14 @@ function attachDeleteHandler(article, stack) {
 
             updateStackStats(loadedStacks);
 
+            ValaToast.show({ type: 'success', title: 'Stack supprimée', message: `La stack "${stack.slug}" et ses conteneurs ont été supprimés.` });
+
             const emptyState = document.getElementById('empty-state');
             if (loadedStacks.length === 0 && emptyState) {
                 emptyState.style.display = '';
             }
         } catch (error) {
-            alert(`Erreur lors de la suppression : ${error.message || 'Erreur inconnue'}`);
+            ValaToast.show({ type: 'error', title: 'Erreur de suppression', message: error.message || 'Impossible de supprimer la stack.' });
             btn.disabled = false;
             btn.classList.remove('opacity-50');
         }

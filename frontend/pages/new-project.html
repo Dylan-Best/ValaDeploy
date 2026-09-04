@@ -7,10 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
 <script src="../styles/new-project.tailwind.config.js"></script>
 <link href="../styles/new-project.css" rel="stylesheet">
+<link rel="stylesheet" href="/styles/toast.css"> 
 </head>
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="projects">
 <!-- Shared Component: SideNavBar (identique au Dashboard) -->
 <div data-component="../components/sidebar.html"></div>
+<div data-component="../components/toast-container.html"></div>
 <!-- Main Content Area -->
 <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
 <div class="w-full max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop py-xl md:py-xxl">
@@ -81,6 +83,7 @@
 </main>
 <script src="../scripts/config.js"></script>
 <script src="../scripts/components.js"></script>
+<script src="../scripts/toast.js"></script>
 <script src="../scripts/api/auth.js"></script>   
 <script src="../scripts/api/project.js"></script> 
 <script src="../scripts/new-project.js"></script>

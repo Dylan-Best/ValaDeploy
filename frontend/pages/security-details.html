@@ -7,10 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
 <script src="../styles/security.tailwind.config.js"></script>
 <link href="../styles/security.css" rel="stylesheet">
+<link rel="stylesheet" href="/styles/toast.css"> 
 </head>
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="security">
 <!-- Shared Component: SideNavBar (identique aux autres pages) -->
 <div data-component="../components/sidebar.html"></div>
+<div data-component="../components/toast-container.html"></div>
 <!-- Main Content Area -->
 <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
 <div class="max-w-4xl mx-auto px-margin-desktop py-xl space-y-xl">
@@ -67,6 +69,7 @@
 </div>
 </main>
 <script src="../scripts/components.js"></script>
+<script src="../scripts/toast.js"></script>
 <script src="../scripts/api/auth.js"></script>
 <script src="../scripts/api/security.js"></script>
 <script src="../scripts/security-details.js"></script>

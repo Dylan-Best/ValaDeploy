@@ -1,3 +1,4 @@
+//scripts/components.js
 // Charge un fragment HTML (composant) et l'injecte dans un placeholder.
 // Usage : <div data-component="../components/sidebar.html"></div>
 // Le lien de nav dont data-page correspond à document.body.dataset.page

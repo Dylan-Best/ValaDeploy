@@ -1,3 +1,6 @@
+
+// new-stack.js
+// Gestion du formulaire de création de stack (nouveau projet avec composants)
 document.addEventListener('DOMContentLoaded', () => {
     // Initialisation des composants partagés (sidebar, etc.)
     if (typeof loadComponents === 'function') {
@@ -42,7 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.remove();
                 updateConnectors();
             } else {
-                alert("Une stack doit contenir au moins un composant.");
+                if (typeof ValaToast !== 'undefined') {
+                    ValaToast.show({
+                        type: 'warning',
+                        title: 'Action impossible',
+                        message: 'Une stack doit contenir au moins un composant.'
+                    });
+                } else {
+                    alert("Une stack doit contenir au moins un composant.");
+                }
             }
         }
         
@@ -253,7 +264,19 @@ async function handleStackSubmit(event) {
         const response = await createStack(payload);
         
         console.log("Réponse du serveur:", response);
-        alert(`Stack "${slug}" enregistrée et déploiement lancé !`);
+        if (typeof ValaToast !== 'undefined') {
+            ValaToast.show({
+                type: 'success',
+                title: 'Déploiement lancé',
+                message: `La stack "${slug}" est en cours de création.`,
+                duration: 3000
+            });
+        }
+
+        // Petit délai pour laisser l'utilisateur voir le toast avant la redirection
+        setTimeout(() => {
+            window.location.href = `pipeline.html?project_id=${response.project_id}`;
+        }, 500);
         
         // Redirection vers la page de pipeline en utilisant le project_id retourné par le backend
 
@@ -261,7 +284,16 @@ async function handleStackSubmit(event) {
 
     } catch (error) {
         console.error("Erreur de déploiement:", error);
-        alert(`Échec du déploiement : ${error.message}`);
+        if (typeof ValaToast !== 'undefined') {
+            ValaToast.show({
+                type: 'error',
+                title: 'Échec du déploiement',
+                message: error.message || 'Une erreur inconnue est survenue lors de la création de la stack.',
+                duration: 8000
+            });
+        } else {
+            alert(`Échec du déploiement : ${error.message}`);
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnText;

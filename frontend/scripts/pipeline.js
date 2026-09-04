@@ -110,6 +110,14 @@ function pollPipeline() {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.close(1000, "Pipeline terminé");
                 }
+
+                if (data.status === 'success') {
+                    ValaToast.show({ type: 'success', title: 'Déploiement réussi', message: `Le projet ${currentSlug} est opérationnel.` });
+                } else if (data.status === 'failed') {
+                    ValaToast.show({ type: 'error', title: 'Échec du déploiement', message: 'Le pipeline a échoué. Consultez les logs pour plus de détails.', duration: 8000 });
+                } else if (data.status === 'cancelled') {
+                    ValaToast.show({ type: 'warning', title: 'Build annulé', message: 'Le déploiement a été interrompu.' });
+                }
             }
         })
         .catch(error => {
@@ -242,7 +250,12 @@ function setupActionButtons() {
             if (!window.confirm('Annuler ce build en cours ?')) return;
             cancelBtn.disabled = true;
             cancelBuild(currentProjectId)
-                .catch(error => alert(`Erreur lors de l'annulation : ${error.message || 'Erreur inconnue'}`))
+                .then(() => {
+                    ValaToast.show({ type: 'info', title: 'Annulation demandée', message: 'Le build est en cours d\'arrêt.' });
+                })
+                .catch(error => {
+                    ValaToast.show({ type: 'error', title: 'Erreur d\'annulation', message: error.message || 'Erreur inconnue' });
+                })
                 .finally(() => { cancelBtn.disabled = false; });
         });
     }
@@ -253,13 +266,16 @@ function setupActionButtons() {
             retryBtn.disabled = true;
             retryBuild(currentProjectId)
                 .then(() => {
+                    ValaToast.show({ type: 'info', title: 'Relance du build', message: 'Le pipeline redémarre...' });
                     const body = document.getElementById('terminal-body');
-                    if (body) body.innerHTML = ''; // Clear logs on retry
+                    if (body) body.innerHTML = ''; 
                     if (ws) ws.close();
                     connectWebSocket(currentSlug);
                     pollPipeline();
                 })
-                .catch(error => alert(`Erreur lors de la relance : ${error.message || 'Erreur inconnue'}`))
+                .catch(error => {
+                    ValaToast.show({ type: 'error', title: 'Erreur de relance', message: error.message || 'Erreur inconnue' });
+                })
                 .finally(() => { retryBtn.disabled = false; });
         });
     }

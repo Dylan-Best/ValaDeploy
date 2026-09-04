@@ -15,11 +15,13 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="../styles/new-stack.tailwind.js"></script>
     <link rel="stylesheet" href="../styles/stacks.css">
+    <link rel="stylesheet" href="/styles/toast.css"> 
 </head>
 <body class="flex bg-surface text-on-surface h-screen overflow-hidden">
 
     <!-- Sidebar chargée dynamiquement -->
     <div data-component="../components/sidebar.html"></div>
+    <div data-component="../components/toast-container.html"></div>
 
     <!-- Main Content Canvas -->
     <main class="flex-1 w-full md:ml-64 mt-16 md:mt-0 overflow-y-auto h-full relative">
@@ -213,6 +215,7 @@
     <script src="../scripts/api/project.js"></script>
     <script src="../scripts/api/stack.js"></script> 
     <script src="../scripts/components.js"></script>
+    <script src="../scripts/toast.js"></script>
     <script src="../scripts/new-stack.js"></script>
 </body>
 </html>

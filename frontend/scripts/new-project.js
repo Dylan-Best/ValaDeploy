@@ -1,4 +1,4 @@
-// new-project.js
+// api/new-project.js
 // Gestion du formulaire de création de projet
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -153,11 +153,11 @@ function setupFormSubmit() {
 
         // 2. Validation basique
         if (!projectName) {
-            alert('Le nom du projet est requis');
+            ValaToast.show({ type: 'warning', title: 'Champ requis', message: 'Le nom du projet est obligatoire.' });
             return;
         }
         if (!gitUrl) {
-            alert('L\'URL du dépôt Git est requise');
+            ValaToast.show({ type: 'warning', title: 'Champ requis', message: 'L\'URL du dépôt Git est requise.' });
             return;
         }
 
@@ -197,12 +197,17 @@ function setupFormSubmit() {
             console.error('Erreur lors du déploiement:', error);
 
             // Afficher une erreur plus parlante
-            let errorMessage = 'Une erreur est survenue lors du déploiement.';
-            if (error.message) {
-                // Si l'erreur vient du backend, elle est déjà formatée
-                errorMessage = error.message;
+            const errorMessage = error.message || 'Une erreur inconnue est survenue lors du déploiement.';
+            if (typeof ValaToast !== 'undefined') {
+                ValaToast.show({
+                    type: 'error',
+                    title: 'Échec du déploiement',
+                    message: errorMessage,
+                    duration: 8000 // Plus long pour une erreur
+                });
+            } else {
+                alert(errorMessage); // Fallback de sécurité si le toast n'est pas chargé
             }
-            alert(`${errorMessage}`);
 
             // 9. Réactiver le bouton
             submitBtn.disabled = false;

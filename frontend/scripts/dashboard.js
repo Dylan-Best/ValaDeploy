@@ -1,4 +1,4 @@
-// dashboard.js
+// api/dashboard.js
 // Chargement des projets et affichage dans le tableau
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,12 +12,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderProjects(projects);
             } catch (error) {
                 console.error('Erreur chargement projets:', error);
+                    
+                if (typeof ValaToast !== 'undefined') {
+                    ValaToast.show({
+                        type: 'error',
+                        title: 'Erreur de chargement',
+                        message: error.message || 'Impossible de récupérer la liste des projets.',
+                        duration: 6000
+                    });
+                }
                 const tbody = document.getElementById('projects-table-body');
                 if (tbody) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="py-lg text-center text-error">
-                                 Erreur de chargement des projets: ${error.message || 'Erreur inconnue'}
+                            <td colspan="5" class="py-lg text-center text-on-surface-variant">
+                                Impossible d'afficher les projets pour le moment.
                             </td>
                         </tr>
                     `;
