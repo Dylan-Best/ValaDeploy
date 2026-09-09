@@ -1,5 +1,3 @@
-# app/api/routes_stack.py
-
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
@@ -12,7 +10,6 @@ from app.services.deploy_service import DeployService
 from app.schemas.stack_deploy import StackDeploySchema
 
 router = APIRouter()
-
 
 @router.post("/deploy/stack", status_code=202)
 async def deploy_stack(
@@ -72,12 +69,14 @@ async def deploy_stack(
         for c in payload.components
     ]
 
+    # AJOUT : transmission du user_id pour l'historique
     background_tasks.add_task(
         run_in_threadpool,
         DeployService.run_stack_deployment_pipeline,
         new_project.id,
         payload.slug,
         pipeline_components,
+        user_id=current_user.id,
     )
 
     return {
@@ -87,8 +86,6 @@ async def deploy_stack(
         "message": "Déploiement de la stack lancé."
     }
 
-
-# routes/deploy.py
 @router.get("/deploy/stacks")
 async def list_stacks(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Liste résumée (1 ligne/stack) — détail des composants chargé à la demande via l'endpoint existant /deploy/stack/{project_id}/status."""

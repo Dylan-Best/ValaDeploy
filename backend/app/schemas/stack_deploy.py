@@ -1,3 +1,4 @@
+#app/schemas/stack_deploy.py
 from pydantic import BaseModel, model_validator
 from app.models.project import ComponentKind
 

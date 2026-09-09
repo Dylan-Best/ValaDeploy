@@ -20,6 +20,7 @@ class UserResponseSchema(BaseModel):
     email : EmailStr
     role : str 
     is_active : bool 
+    must_change_password: bool 
     created_at : datetime
     
     model_config = ConfigDict(from_attributes=True) 
@@ -31,3 +32,7 @@ class LoginSchema(BaseModel):
 class TokenSchema(BaseModel):
     access_token: str
     token_type: str
+    
+class ChangePasswordSchema(BaseModel):
+    old_password: str
+    new_password: str

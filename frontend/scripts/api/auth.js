@@ -81,7 +81,11 @@ function loginUser(email, password) {
     body: JSON.stringify({ email, password })
   })
     .then(handleResponse)
-    .then(data => data);
+      .then(data => {
+      // AJOUT : On stocke le token immédiatement pour les appels suivants
+      currentAccessToken = data.access_token; 
+      return data;
+    });
 }
 
 
@@ -107,6 +111,20 @@ function logoutUser() {
   return fetch("http://app.localhost:8080/api/auth/logout", {
     method: "POST",
     credentials: "include"
+  }).then(handleResponse);
+}
+
+function changePassword(oldPassword, newPassword) {
+  return fetch("http://app.localhost:8080/api/auth/change-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + currentAccessToken
+    },
+    body: JSON.stringify({ 
+      old_password: oldPassword, 
+      new_password: newPassword 
+    })
   }).then(handleResponse);
 }
 

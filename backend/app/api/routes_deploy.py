@@ -1,5 +1,3 @@
-#app/api/routes_stack.py
-
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
@@ -12,7 +10,6 @@ from app.services.deploy_service import DeployService
 from app.schemas.deploy import CloneSchema
 
 router = APIRouter()
-
 
 @router.post("/deploy", status_code=202)
 async def deploy(
@@ -30,18 +27,25 @@ async def deploy(
             branch=payload.branch,
             replica=payload.replica,
             env_vars=payload.envs_var,
+            port=payload.port,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    background_tasks.add_task(run_in_threadpool, DeployService.run_deployment_pipeline, new_project.id, payload)
+    # AJOUT : transmission du user_id pour l'historique
+    background_tasks.add_task(
+        run_in_threadpool, 
+        DeployService.run_deployment_pipeline, 
+        new_project.id, 
+        payload,
+        user_id=current_user.id
+    )
 
     return {
         "project_id": new_project.id,
         "status": new_project.status,
         "message": "Déploiement lancé."
     }
-
 
 @router.get("/deploy/{project_id}/status")
 async def get_deploy_status(

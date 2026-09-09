@@ -36,7 +36,10 @@ class Project(Base):
     branch = Column(String, nullable=False, default="main")
     replica = Column(Integer, nullable=False, default=1)
     env_vars = Column(JSON, nullable=False, default=dict)
+    port = Column(Integer, nullable=True)
+    
     status = Column(Enum(ProjectStatus), nullable=False, default=ProjectStatus.BUILDING)
+    pipeline_run_id = Column(String, nullable=True) # pour les threads de suivi du pipeline, on stocke l'ID du run actuel (ou None si pas de pipeline en cours)
     container_ids = Column(JSON, nullable=True)  # liste des container IDs
     commit_hash = Column(String, nullable=True)
     error_message = Column(String, nullable=True)
@@ -52,7 +55,7 @@ class Project(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     services = relationship("ProjectComponent", back_populates="project", cascade="all, delete-orphan")
-
+    deployment_runs = relationship("DeploymentRun", back_populates="project", cascade="all, delete-orphan")
 
 class ProjectComponent(Base):
     """

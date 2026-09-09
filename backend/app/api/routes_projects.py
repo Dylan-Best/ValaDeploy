@@ -1,6 +1,5 @@
-#app/api.routes_projects.py
-
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.core.security import get_current_user
@@ -10,8 +9,10 @@ from app.core.docker_client import client
 from fastapi import Query
 from app.models.project import ProjectComponent, ProjectStatus 
 import logging
-
-from app.services.container_service import ensure_project_network, manage_container_state, run_container 
+from app.schemas.deploy import CloneSchema
+from app.services.cleanup_service import cleanup_project_resources
+from app.services.container_service import ensure_project_network, manage_container_state, run_container
+from app.services.deploy_service import DeployService 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -52,7 +53,6 @@ def get_dashboard_stats(
     """
     return ProjectService.get_dashboard_stats(db, current_user.id)
 
-
 @router.post("/projects/{slug}/action")
 def project_action(
     slug: str,
@@ -92,8 +92,6 @@ def project_action(
         container_ids_to_manage = project.container_ids
         project.status = new_status # Mise à jour du statut en BDD
 
-
-    
     new_container_ids = []
     
     # On s'assure que le réseau interne existe
@@ -185,10 +183,15 @@ async def get_pipeline_status(
         ProjectStatus.STOPPED: "cancelled"
     }
     global_status = status_map.get(project.status, "running")
+    cancelled = project.status == ProjectStatus.STOPPED
+
     steps = []
-    
+
     # 1. Étape Clone
-    clone_status = "completed" if project.commit_hash else ("active" if project.status == ProjectStatus.BUILDING else "pending")
+    if cancelled:
+        clone_status = "completed" if project.commit_hash else "cancelled"
+    else:
+        clone_status = "completed" if project.commit_hash else ("active" if project.status == ProjectStatus.BUILDING else "pending")
     steps.append({
         "label": "Clone Repository",
         "description": f"Récupération de la branche {project.branch}",
@@ -197,11 +200,17 @@ async def get_pipeline_status(
     })
 
     # 2. Étape Build
-    build_status = "pending"
-    if project.status in [ProjectStatus.RUNNING, ProjectStatus.FAILED, ProjectStatus.STOPPED]:
-        build_status = "completed"
-    elif project.status == ProjectStatus.BUILDING and project.commit_hash:
-        build_status = "active"
+    if cancelled:
+        # Si le clone n'a même pas terminé, le build n'a pas commencé -> pending.
+        # Sinon on ne peut pas garantir qu'il ait terminé -> cancelled (jamais "completed",
+        # ce serait trompeur pour un build interrompu).
+        build_status = "cancelled" if clone_status == "completed" else "pending"
+    else:
+        build_status = "pending"
+        if project.status in [ProjectStatus.RUNNING, ProjectStatus.FAILED]:
+            build_status = "completed"
+        elif project.status == ProjectStatus.BUILDING and project.commit_hash:
+            build_status = "active"
     steps.append({
         "label": "Build Docker Image",
         "description": "Génération du Dockerfile et construction",
@@ -210,11 +219,14 @@ async def get_pipeline_status(
     })
 
     # 3. Étape Security Scan
-    scan_status = "pending"
-    if project.status in [ProjectStatus.RUNNING, ProjectStatus.FAILED, ProjectStatus.STOPPED]:
-        scan_status = "completed"
-    elif project.status == ProjectStatus.BUILDING and build_status == "completed":
-        scan_status = "active"
+    if cancelled:
+        scan_status = "cancelled" if build_status == "cancelled" else "pending"
+    else:
+        scan_status = "pending"
+        if project.status in [ProjectStatus.RUNNING, ProjectStatus.FAILED]:
+            scan_status = "completed"
+        elif project.status == ProjectStatus.BUILDING and build_status == "completed":
+            scan_status = "active"
     steps.append({
         "label": "Security Scan",
         "description": "Analyse Trivy (vulnérabilités) et Gitleaks (secrets)",
@@ -223,13 +235,16 @@ async def get_pipeline_status(
     })
 
     # 4. Étape Deploy
-    deploy_status = "pending"
-    if project.status == ProjectStatus.RUNNING:
-        deploy_status = "completed"
-    elif project.status == ProjectStatus.FAILED:
-        deploy_status = "failed"
-    elif project.status == ProjectStatus.BUILDING and scan_status == "completed":
-        deploy_status = "active"
+    if cancelled:
+        deploy_status = "cancelled" if scan_status == "cancelled" else "pending"
+    else:
+        deploy_status = "pending"
+        if project.status == ProjectStatus.RUNNING:
+            deploy_status = "completed"
+        elif project.status == ProjectStatus.FAILED:
+            deploy_status = "failed"
+        elif project.status == ProjectStatus.BUILDING and scan_status == "completed":
+            deploy_status = "active"
     steps.append({
         "label": "Deploy to Traefik",
         "description": "Démarrage des conteneurs et configuration du routage",
@@ -237,14 +252,14 @@ async def get_pipeline_status(
         "duration_seconds": 5 if deploy_status == "completed" else None
     })
 
-    # Si c'est une stack, on détaille les composants dans le pipeline
+    # Si c'est une stack, on détaille en plus les composants dans le pipeline
     components = ProjectService.get_components_by_project(db, project_id)
     if len(components) > 0:
         comp_status_map = {
             ProjectStatus.BUILDING: "active",
             ProjectStatus.RUNNING: "completed",
             ProjectStatus.FAILED: "failed",
-            ProjectStatus.STOPPED: "pending"
+            ProjectStatus.STOPPED: "cancelled"
         }
         for comp in components:
             steps.append({
@@ -264,6 +279,8 @@ async def get_pipeline_status(
         logs.append("[INFO] Containers started and attached to Traefik network")
     elif project.status == ProjectStatus.FAILED:
         logs.append(f"[ERROR] Pipeline failed: {project.error_message or 'Unknown error'}")
+    elif project.status == ProjectStatus.STOPPED:
+        logs.append("[INFO] Pipeline annulé par l'utilisateur")
     else:
         logs.append("[INFO] Pipeline in progress...")
 
@@ -289,7 +306,7 @@ async def get_pipeline_status(
         "steps": steps,
         "logs": logs
     }
-
+    
 @router.post("/deploy/{project_id}/cancel")
 async def cancel_build(
     project_id: int,
@@ -300,11 +317,25 @@ async def cancel_build(
     if not project:
         raise HTTPException(status_code=404, detail="Projet introuvable")
     
-    if project.status == ProjectStatus.BUILDING:
-        project.status = ProjectStatus.FAILED
-        project.error_message = "Build cancelled by user"
-        db.commit()
-    return {"message": "Build cancelled"}
+    # Si ce n'est plus en cours de build, on ne fait rien (évite les erreurs si on clique 2 fois)
+    if project.status != ProjectStatus.BUILDING:
+        return {"message": "Le build n'est plus en cours."}
+    
+    # 1. Marquer le projet comme STOPPED
+    project.status = ProjectStatus.STOPPED
+    project.error_message = "Build annulé par l'utilisateur"
+    
+    # 2. Marquer les composants en cours comme STOPPED
+    components = ProjectService.get_components_by_project(db, project_id)
+    for comp in components:
+        if comp.status == ProjectStatus.BUILDING:
+            comp.status = ProjectStatus.STOPPED
+            comp.error_message = "Build annulé par l'utilisateur"
+            
+    # 3.  COMMIT IMMÉDIAT ET OBLIGATOIRE
+    db.commit()
+    
+    return {"message": "Annulation demandée. Le pipeline va s'arrêter."}
 
 @router.post("/deploy/{project_id}/retry")
 async def retry_build(
@@ -313,13 +344,56 @@ async def retry_build(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    project = ProjectService.get_project_by_id(db, project_id, current_user.id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Projet introuvable")
+    try:
+        project, is_stack, components, run_id = DeployService.retry_deployment(db, project_id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     
-    project.status = ProjectStatus.BUILDING
-    project.error_message = None
-    db.commit()
+    # Lancer le bon pipeline en background
+    if is_stack:
+        pipeline_components = [
+            {
+                "component_id": c.id,
+                "name": c.name,
+                "kind": c.kind,
+                "repo_url": c.repo_url,
+                "branch": c.branch,
+                "replica": c.replica or 1,
+                "envs_var": c.env_vars or {},
+                "db_image": c.db_image,
+                "volume_name": c.volume_name,
+                "expose_publicly": c.port is not None,
+                "port": c.port,
+            }
+            for c in components
+        ]
+        # AJOUT : user_id et run_id pour l'historique et la gestion des threads zombies
+        background_tasks.add_task(
+            run_in_threadpool,
+            DeployService.run_stack_deployment_pipeline,
+            project.id,
+            project.slug,
+            pipeline_components,
+            user_id=current_user.id,
+            run_id=run_id,
+        )
+    else:
+        payload = CloneSchema(
+            slug=project.slug,
+            repo_url=project.repo_url,
+            branch=project.branch,
+            replica=project.replica or 1,
+            envs_var=project.env_vars or {},
+            port=project.port
+        )
+        # AJOUT : user_id et run_id pour l'historique et la gestion des threads zombies
+        background_tasks.add_task(
+            run_in_threadpool,
+            DeployService.run_deployment_pipeline,
+            project.id,
+            payload,
+            user_id=current_user.id,
+            run_id=run_id,
+        )
     
-    # TODO: Relancer le vrai pipeline DeployService ici
-    return {"message": "Build retry initiated"}
+    return {"message": "Build relancé avec succès"}

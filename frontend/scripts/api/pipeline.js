@@ -2,10 +2,17 @@
 
 function getPipelineStatus(projectId) {
     return fetchWithAutoRefresh(function(token) {
-        return fetch('http://app.localhost:8080/api/deploy/' + projectId + '/pipeline', {
+        // Timestamp unique pour empêcher le cache du navigateur
+        const timestamp = new Date().getTime();
+        
+        return fetch('http://app.localhost:8080/api/deploy/' + projectId + '/pipeline?t=' + timestamp, {
             method: 'GET',
             headers: {
-                'Authorization': 'Bearer ' + token
+                'Authorization': 'Bearer ' + token,
+                // En-têtes HTTP pour forcer le non-cache
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         }).then(handleResponse);
     });

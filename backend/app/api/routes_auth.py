@@ -1,10 +1,11 @@
+#app/api/routes_auth.py
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.schemas.auth import UserRegisterSchema, UserResponseSchema, LoginSchema, TokenSchema
+from app.schemas.auth import ChangePasswordSchema, UserRegisterSchema, UserResponseSchema, LoginSchema, TokenSchema
 from app.services.auth_service import register_user, login_user, logout_user, refresh_access_token
-from app.core.security import get_current_user, require_admin
+from app.core.security import get_current_user, hash_password, require_admin, verify_password
 from app.models.user import User
 from app.core.config import settings
 
@@ -87,6 +88,27 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
     response.delete_cookie("refresh_token", path="/api/auth")
 
     return {"message": "Logged out"}
+
+@router.post("/change-password")
+def change_password(
+    data: ChangePasswordSchema,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. Vérifier l'ancien mot de passe
+    if not verify_password(data.old_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Ancien mot de passe incorrect")
+    
+    # 2. Validation basique du nouveau
+    if len(data.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Le nouveau mot de passe doit faire au moins 8 caractères")
+
+    # 3. Mise à jour
+    current_user.password_hash = hash_password(data.new_password)
+    current_user.must_change_password = False # Désactive le flag de force
+    db.commit()
+    
+    return {"message": "Mot de passe modifié avec succès"}
 
 @router.get("/me", response_model=UserResponseSchema)
 def get_me(current_user: User = Depends(get_current_user)):

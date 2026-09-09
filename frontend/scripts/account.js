@@ -1,3 +1,4 @@
+//scripts/account.js
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("btn-logout-everywhere");
   const deleteBtn = document.getElementById("btn-delete-account");
@@ -5,6 +6,37 @@ document.addEventListener("DOMContentLoaded", () => {
   // Remplit les infos du compte + calcule le temps restant de la session
   initUserSession(
     (user, accessToken) => {
+      if (user.must_change_password) {
+        console.warn("Changement de mot de passe obligatoire.");
+        
+        // Masque les sections profil et danger zone
+        const profileSection = document.querySelector("section:has(#profile-fullname)");
+        const dangerZoneSection = document.querySelector("section:has(#btn-delete-account)");
+        
+        if (profileSection) profileSection.style.display = "none";
+        if (dangerZoneSection) dangerZoneSection.style.display = "none";
+        
+        // Optionnel : ajoute un message d'alerte en haut
+        const mainHeader = document.querySelector("header");
+        if (mainHeader && !document.getElementById("password-change-alert")) {
+          const alertDiv = document.createElement("div");
+          alertDiv.id = "password-change-alert";
+          alertDiv.className = "bg-warning-yellow/20 border border-warning-yellow text-primary-dark px-lg py-md rounded-lg mb-xl";
+          alertDiv.innerHTML = `
+            <div class="flex items-center gap-sm">
+              <span class="material-symbols-outlined text-warning-yellow">warning</span>
+              <p class="font-body-md text-body-md">
+                <strong>Sécurité :</strong> Vous devez changer votre mot de passe avant de continuer.
+              </p>
+            </div>
+          `;
+          mainHeader.after(alertDiv);
+        }
+        
+        // Passe à la gestion du formulaire de changement de mot de passe
+        setupPasswordChangeForm(accessToken);
+        return;
+      }
       const fullnameEl = document.getElementById('profile-fullname');
       const emailEl = document.getElementById('profile-email');
       const roleEl = document.getElementById('profile-role');
@@ -62,6 +94,60 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// Fonction dédiée au formulaire de changement de mot de passe
+function setupPasswordChangeForm(accessToken) {
+  const submitBtn = document.querySelector("section:has(#current_password) button");
+  const currentPasswordInput = document.getElementById("current_password");
+  const newPasswordInput = document.getElementById("new_password");
+  const confirmPasswordInput = document.getElementById("confirm_password");
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", async () => {
+      const oldPass = currentPasswordInput.value;
+      const newPass = newPasswordInput.value;
+      const confirmPass = confirmPasswordInput.value;
+
+      // Validations
+      if (!oldPass || !newPass || !confirmPass) {
+        ValaToast.show("Veuillez remplir tous les champs.", "error");
+        return;
+      }
+
+      if (newPass !== confirmPass) {
+        ValaToast.show("Les mots de passe ne correspondent pas.", "error");
+        return;
+      }
+
+      if (newPass.length < 8) {
+        ValaToast.show("Le mot de passe doit faire au moins 8 caractères.", "error");
+        return;
+      }
+
+      // Feedback visuel
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Mise à jour...";
+
+      try {
+        await changePassword(oldPass, newPass);
+        
+        ValaToast.show("Mot de passe modifié avec succès !", "success");
+        
+        // Recharge la page pour réafficher tout le profil
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+        
+      } catch (error) {
+        ValaToast.show(error.message || "Erreur lors du changement de mot de passe", "error");
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+  }
+}
+
 
 // Transforme un "exp" (timestamp Unix, en secondes) en texte lisible du style "Expires in 42 min"
 function formatTimeRemaining(expTimestamp) {

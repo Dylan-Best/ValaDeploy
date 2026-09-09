@@ -1,9 +1,11 @@
+from sqlalchemy import exists
 from sqlalchemy.orm import Session
 from app.models.project import FailReason, Project, ProjectStatus, ProjectComponent, ComponentKind
 from app.models.user import User
 from datetime import datetime
 from typing import List, Dict, Any
 import secrets
+from app.services.cleanup_service import cleanup_project_resources
 
 class ProjectService:
     """Service pour la gestion des projets en base de données"""
@@ -100,6 +102,7 @@ class ProjectService:
         branch: str,
         replica: int,
         env_vars: Dict[str, str],
+        port: int = None
     ) -> Project:
         """
         Crée le projet en base immédiatement, statut BUILDING,
@@ -119,6 +122,7 @@ class ProjectService:
             status=ProjectStatus.BUILDING,
             container_ids=None,
             commit_hash=None,
+            port=port,
             created_at=datetime.utcnow()
         )
         db.add(new_project)
@@ -386,56 +390,38 @@ class ProjectService:
     @staticmethod
     def get_user_stacks(db: Session, user_id: int) -> List[Project]:
         """Récupère tous les projets 'stack' (avec au moins un ProjectComponent) d'un utilisateur."""
-        stack_project_ids = db.query(ProjectComponent.project_id).distinct().subquery()
+        # Sous-requête : "existe-t-il au moins un ProjectComponent pour ce projet ?"
+        has_components = exists().where(ProjectComponent.project_id == Project.id)
+        
         return (
             db.query(Project)
-            .join(ProjectComponent, ProjectComponent.project_id == Project.id)
             .filter(Project.user_id == user_id)
-            .filter(Project.id.in_(stack_project_ids))
+            .filter(has_components)  # Plus de JOIN, plus de DISTINCT, plus de problème JSON !
             .all()
         )
         
-        # Ajoute cette méthode à la classe ProjectService dans app/services/project_service.py
-
+     
     @staticmethod
     def delete_project_and_containers(db: Session, project_id: int, user_id: int) -> bool:
         """
         Supprime un projet (ou une stack) : 
-        1. Arrête et supprime les conteneurs Docker associés.
+        1. Nettoie TOUTES les ressources Docker associées (conteneurs, volumes, images, réseaux).
         2. Supprime l'entrée en base de données (cascade vers les composants).
         """
         project = db.query(Project).filter(Project.id == project_id, Project.user_id == user_id).first()
         if not project:
             return False
 
-        import docker
-        try:
-            client = docker.from_env()
-            
-            # 1. Nettoyer les conteneurs du projet parent (si mono-composant)
-            if project.container_ids:
-                for cid in project.container_ids:
-                    try:
-                        container = client.containers.get(cid)
-                        container.remove(force=True)
-                    except docker.errors.NotFound:
-                        pass
-            
-            # 2. Nettoyer les conteneurs de tous les composants (si stack multi-composants)
-            components = ProjectService.get_components_by_project(db, project_id)
-            for comp in components:
-                if comp.container_ids:
-                    for cid in comp.container_ids:
-                        try:
-                            container = client.containers.get(cid)
-                            container.remove(force=True)
-                        except docker.errors.NotFound:
-                            pass
-                            
-        except Exception as e:
-            # On log l'erreur mais on continue la suppression en BDD pour éviter les "zombies"
-            # (À remplacer par logging.exception plus tard selon ta roadmap)
-            print(f"Erreur nettoyage Docker pour {project.slug}: {e}")
+        # 1. Collecter tous les IDs de conteneurs (projet parent + composants)
+        container_ids_to_clean = list(project.container_ids or [])
+        components = ProjectService.get_components_by_project(db, project_id)
+        for comp in components:
+            if comp.container_ids:
+                container_ids_to_clean.extend(comp.container_ids)
+
+        # 2. Nettoyer les ressources Docker via le service dédié (conteneurs, volumes, images, réseaux)
+        
+        cleanup_project_resources(project.slug, container_ids_to_clean)
 
         # 3. Suppression en base de données (le cascade delete s'occupe des ProjectComponent)
         db.delete(project)
