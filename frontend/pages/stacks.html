@@ -20,7 +20,7 @@
     <script src="../styles/stacks.tailwind.config.js"></script>
     <link href="../styles/dashboard.css" rel="stylesheet">
     <link href="../styles/stacks.css" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/toast.css"> 
+    <link rel="stylesheet" href="../styles/toast.css"> 
 </head>
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="stacks">
 
@@ -40,7 +40,7 @@
                 </div>
                 <div class="flex items-center gap-lg">
                     <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
-                    <a href="new-stack.html" class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
+                    <a href="new-stack.html" class="bg-primary text-on-primary px-lg py-sm rounded-lg flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
                         <span class="material-symbols-outlined text-[18px]">add</span>
                         New Stack
                     </a>
@@ -48,40 +48,40 @@
             </header>
 
             <!-- Onglets Projects / Stacks (inchangé) -->
-            <nav class="flex gap-lg border-b border-outline-variant mb-xl">
+            <nav class="flex gap-lg border-b border-outline-variant/50 mb-xl">
                 <a href="dashboard.html" class="pb-sm border-b-2 border-transparent text-secondary hover:text-on-surface font-label-md text-label-md transition-colors">Projects</a>
                 <a href="stacks.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md">Stacks</a>
             </nav>
 
-            <!-- Statistics Grid (restylée façon nouveau design, ids conservés) -->
+            <!-- Statistics Grid -->
             <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
                 <!-- Stat Card 1 -->
-                <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex items-center justify-between">
+                <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-lg flex items-center justify-between hover:border-outline-variant transition-colors">
                     <div>
                         <p class="font-label-sm text-label-sm text-secondary uppercase mb-xs tracking-wider">Total Stacks</p>
-                        <p id="total-stacks" class="font-headline-md text-headline-md">0</p>
+                        <p id="total-stacks" class="font-headline-md text-headline-md text-on-surface">0</p>
                     </div>
-                    <div class="h-10 w-10 bg-surface-container rounded flex items-center justify-center shrink-0">
+                    <div class="h-11 w-11 bg-surface-container-high rounded-lg flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-secondary">stacks</span>
                     </div>
                 </div>
                 <!-- Stat Card 2 -->
-                <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex items-center justify-between">
+                <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-lg flex items-center justify-between hover:border-outline-variant transition-colors">
                     <div>
                         <p class="font-label-sm text-label-sm text-secondary uppercase mb-xs tracking-wider">Running</p>
-                        <p id="running-stacks" class="font-headline-md text-headline-md">0</p>
+                        <p id="running-stacks" class="font-headline-md text-headline-md text-on-surface">0</p>
                     </div>
-                    <div class="h-10 w-10 bg-surface-container rounded flex items-center justify-center shrink-0">
+                    <div class="h-11 w-11 bg-[#12B76A]/10 rounded-lg flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-[#12B76A]">check_circle</span>
                     </div>
                 </div>
                 <!-- Stat Card 3 -->
-                <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex items-center justify-between">
+                <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl p-lg flex items-center justify-between hover:border-outline-variant transition-colors">
                     <div>
                         <p class="font-label-sm text-label-sm text-secondary uppercase mb-xs tracking-wider">Failed</p>
                         <p id="failed-stacks" class="font-headline-md text-headline-md text-error">0</p>
                     </div>
-                    <div class="h-10 w-10 bg-error-container rounded flex items-center justify-center shrink-0">
+                    <div class="h-11 w-11 bg-error-container rounded-lg flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-on-error-container">error</span>
                     </div>
                 </div>
@@ -91,7 +91,7 @@
             <section id="stacks-list" class="space-y-md">
 
                 <!-- Loading state -->
-                <div id="loading-state" class="bg-surface-container-lowest border border-outline-variant rounded-lg py-lg text-center text-secondary">
+                <div id="loading-state" class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-lg text-center text-secondary">
                     <div class="flex items-center justify-center gap-sm">
                         <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
                         Chargement des stacks...
@@ -99,10 +99,10 @@
                 </div>
 
                 <!-- Empty state -->
-                <div id="empty-state" class="bg-surface-container-lowest border border-outline-variant rounded-lg py-xl text-center text-secondary" style="display: none;">
+                <div id="empty-state" class="bg-surface-container-lowest border border-outline-variant/50 rounded-xl py-xl text-center text-secondary" style="display: none;">
                     <span class="material-symbols-outlined text-4xl block mb-sm">layers_clear</span>
                     <p>Aucune stack pour le moment</p>
-                    <a href="new-stack.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90">
+                    <a href="new-stack.html" class="inline-block mt-md px-lg py-sm bg-primary text-on-primary rounded-lg hover:opacity-90">
                         Déployer votre première stack
                     </a>
                 </div>

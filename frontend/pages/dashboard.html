@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script src="../styles/dashboard.tailwind.config.js"></script>
 <link href="../styles/dashboard.css" rel="stylesheet">
-<link rel="stylesheet" href="/styles/toast.css"> 
+<link rel="stylesheet" href="/styles/toast.css">
 </head>
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="projects">
 
@@ -23,15 +23,16 @@
 <!-- Main Content Area -->
 <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
 <div class="max-w-max-width mx-auto px-margin-desktop py-xl">
+
 <!-- Page Header -->
-<header class="flex justify-between items-center mb-lg">
+<header class="flex justify-between items-center mb-xl">
 <div>
 <h1 class="font-headline-lg text-headline-lg text-on-surface">Projects</h1>
 <p class="font-body-sm text-body-sm text-secondary mt-xs">Manage and monitor your deployments.</p>
 </div>
 <div class="flex items-center gap-lg">
     <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
-    <a href="new-project.html" class="bg-primary-container text-on-primary px-lg py-sm rounded flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
+    <a href="new-project.html" class="bg-primary text-on-primary px-lg py-sm rounded-lg flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
         <span class="material-symbols-outlined text-[18px]">add</span>
         New Project
     </a>
@@ -39,45 +40,83 @@
 </header>
 
 <!-- Onglets Projects / Stacks -->
-<nav class="flex gap-lg border-b border-outline-variant mb-xl">
-    <a href="dashboard.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md">Projects</a>
+<nav class="flex items-center gap-lg border-b border-outline-variant/50 mb-xl">
+    <a href="dashboard.html" class="pb-sm border-b-2 border-primary text-on-surface font-label-md text-label-md flex items-center gap-sm">
+        Projects
+        <span id="total-projects-badge" class="bg-primary-container/10 text-primary font-label-sm text-label-sm px-sm rounded-full">20</span>
+    </a>
     <a href="stacks.html" class="pb-sm border-b-2 border-transparent text-secondary hover:text-on-surface font-label-md text-label-md transition-colors">Stacks</a>
 </nav>
 
 <!-- Statistics Grid -->
 <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
     <!-- Stat Card 1 -->
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-        <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">folder</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Total Projects</span>
+    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-xs text-secondary">
+                <span class="material-symbols-outlined text-[18px]">folder</span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider">Total Projects</span>
+            </div>
+            <span class="bg-surface-container-high text-secondary font-label-sm text-label-sm px-sm py-[2px] rounded">All spaces</span>
         </div>
-        <div id="total-projects" class="font-display text-display text-on-surface">0</div>
+        <div class="flex items-baseline gap-sm">
+            <div id="total-projects" class="font-display text-display text-on-surface">0</div>
+            <span class="font-body-sm text-body-sm text-secondary">active workspaces</span>
+        </div>
     </div>
     <!-- Stat Card 2 -->
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-    <div class="flex items-center gap-xs text-secondary">
-        <span class="material-symbols-outlined text-[18px]">radar</span>
-        <span class="font-label-sm text-label-sm uppercase tracking-wider">Critical Vuln Failures</span>
-    </div>
-    <div id="critical-vulns" class="font-display text-display text-error">0%</div>
+    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-xs text-secondary">
+                <span class="material-symbols-outlined text-[18px]">radar</span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider">Critical Vuln Failures</span>
+            </div>
+            <span class="bg-error-container text-error font-label-sm text-label-sm px-sm py-[2px] rounded flex items-center gap-xs">
+                <span class="w-[6px] h-[6px] rounded-full bg-error inline-block"></span>
+                Needs review
+            </span>
+        </div>
+        <div class="flex items-baseline gap-sm">
+            <div id="critical-vulns" class="font-display text-display text-error">0%</div>
+            <span class="font-body-sm text-body-sm text-secondary">high severity rate</span>
+        </div>
     </div>
     <!-- Stat Card 3 -->
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-lg flex flex-col gap-sm">
-        <div class="flex items-center gap-xs text-secondary">
-            <span class="material-symbols-outlined text-[18px]">memory</span>
-            <span class="font-label-sm text-label-sm uppercase tracking-wider">Running Containers</span>
+    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-xs text-secondary">
+                <span class="material-symbols-outlined text-[18px]">memory</span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider">Running Containers</span>
+            </div>
+            <span class="bg-[#e6f6ee] text-[#12B76A] font-label-sm text-label-sm px-sm py-[2px] rounded flex items-center gap-xs">
+                <span class="w-[6px] h-[6px] rounded-full bg-[#12B76A] inline-block"></span>
+                healthy
+            </span>
         </div>
-        <div id="running-containers" class="font-display text-display text-on-surface">0</div>
+        <div class="flex items-baseline gap-sm">
+            <div id="running-containers" class="font-display text-display text-on-surface">0</div>
+            <span class="font-body-sm text-body-sm text-secondary">instances allocated</span>
+        </div>
     </div>
 </section>
 
 <!-- Project List Table -->
-<section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+<section class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg overflow-hidden">
+
+    <!-- Filter bar -->
+    <div class="flex items-center justify-between px-lg py-md border-b border-outline-variant/50">
+        <div class="relative w-full max-w-[320px]">
+            <span class="material-symbols-outlined text-[18px] text-secondary absolute left-sm top-1/2 -translate-y-1/2">search</span>
+            <input id="project-filter" type="text" placeholder="Filter projects..."
+                class="w-full pl-xl pr-md py-sm border border-outline-variant/50 rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-secondary focus:outline-none focus:ring-1 focus:ring-primary">
+        </div>
+        <span id="showing-count" class="font-body-sm text-body-sm text-secondary shrink-0">Showing 7 of 20 projects</span>
+    </div>
+
     <div class="w-full overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead>
-                <tr class="border-b border-outline-variant bg-surface-container-low">
+                <tr class="border-b border-outline-variant/50 bg-surface-container-low">
                     <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Project</th>
                     <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Status</th>
                     <th class="py-md px-lg font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Commit</th>
@@ -85,8 +124,8 @@
                     <th class="py-md px-lg text-right"></th>
                 </tr>
             </thead>
-            <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant" id="projects-table-body">
-                <!-- Les projets seront chargés dynamiquement ici -->
+            <tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant/30" id="projects-table-body">
+                <!-- Les lignes sont générées dynamiquement par api/dashboard.js (createProjectRow) -->
                 <!-- Ligne de chargement -->
                 <tr id="loading-row">
                     <td colspan="5" class="py-lg text-center text-secondary">
@@ -109,7 +148,17 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between px-lg py-md border-t border-outline-variant/50">
+        <span id="workspace-label" class="font-body-sm text-body-sm text-secondary">Enterprise Workspace · production-cluster-01</span>
+        <div class="flex items-center gap-sm">
+            <button id="prev-page" class="px-md py-xs border border-outline-variant/50 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low transition-colors disabled:opacity-40" disabled>Previous</button>
+            <button id="next-page" class="px-md py-xs border border-outline-variant/50 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low transition-colors">Next</button>
+        </div>
+    </div>
 </section>
+
 </div>
 </main>
 

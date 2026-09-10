@@ -5,11 +5,19 @@
 /* ---------- Carte de stack (article accordéon) ---------- */
 
 .stack-card {
-    transition: box-shadow 0.15s ease;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.stack-card:hover {
+    box-shadow: 0 2px 8px -2px rgba(17, 28, 45, 0.06);
 }
 
 .stack-card-header {
     user-select: none;
+}
+
+.stack-card[data-expanded="true"] {
+    border-color: rgba(167, 58, 0, 0.3); /* primary, adouci */
 }
 
 .stack-card[data-expanded="true"] .stack-card-header {
@@ -62,7 +70,11 @@
 }
 
 .component-row {
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.component-row:hover {
+    border-color: #8f7065; /* outline */
 }
 
 .component-kind-pill {
@@ -76,14 +88,21 @@
     text-transform: capitalize;
 }
 
-/* Lien "Voir" — visible au survol de la ligne composant */
-.component-view-link {
-    opacity: 0;
-    transition: opacity 0.15s ease;
+/* Icône de composant — pastille colorée selon le type (front/back/db) */
+.component-icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.component-row:hover .component-view-link {
-    opacity: 1;
+/* Lien "Voir" — toujours visible (cohérence avec Projects/Security : pas
+   d'action cachée derrière un hover, meilleur pour mobile/accessibilité) */
+.component-view-link {
+    transition: color 0.15s ease;
 }
 
 /* Lien "View Build Logs" — affiché uniquement si le composant est en échec */

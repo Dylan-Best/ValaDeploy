@@ -68,9 +68,11 @@ function createStackCard(stack) {
     const statusConfig = getStatusConfig(stack.status);
     const createdDate = stack.created_at ? new Date(stack.created_at) : null;
     const dateStr = createdDate ? createdDate.toLocaleDateString('fr-FR') : 'Date inconnue';
+    const initial = (stack.slug || '?').charAt(0).toUpperCase();
+    const avatar = getAvatarStyle(stack.slug);
 
     const article = document.createElement('article');
-    article.className = 'stack-card bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden';
+    article.className = 'stack-card bg-surface-container-lowest border border-outline-variant/50 rounded-xl overflow-hidden';
     article.dataset.projectId = stack.project_id;
     article.dataset.slug = stack.slug;
     article.dataset.expanded = 'false';
@@ -79,8 +81,11 @@ function createStackCard(stack) {
         <div class="stack-card-header px-lg py-md flex items-center justify-between cursor-pointer bg-surface hover:bg-surface-container-low transition-colors">
             <div class="flex items-center gap-lg min-w-0">
                 <span class="material-symbols-outlined stack-toggle-icon text-secondary text-[20px]">chevron_right</span>
+                <div class="w-9 h-9 rounded-lg ${avatar.bg} ${avatar.text} flex items-center justify-center font-label-md text-label-md font-semibold shrink-0">
+                    ${initial}
+                </div>
                 <div class="min-w-0">
-                    <h3 class="stack-name font-mono-code text-mono-code font-medium truncate">${escapeHtml(stack.slug)}</h3>
+                    <h3 class="stack-name font-mono-code text-[15px] font-bold text-on-surface truncate">${escapeHtml(stack.slug)}</h3>
                     <p class="font-body-sm text-body-sm text-secondary">Créée le ${dateStr}</p>
                 </div>
             </div>
@@ -92,7 +97,7 @@ function createStackCard(stack) {
                 <div class="font-body-sm text-body-sm text-secondary w-28 text-right hidden sm:block">
                     ${stack.component_count} composant${stack.component_count > 1 ? 's' : ''}
                 </div>
-                 <!-- NOUVEAU : Bouton Pipeline -->
+                 <!-- Bouton Pipeline -->
                 <button class="stack-pipeline-btn text-secondary hover:text-primary p-xs rounded hover:bg-primary-container/30 transition-colors" title="Voir le pipeline" aria-label="Pipeline de ${escapeHtml(stack.slug)}">
                     <span class="material-symbols-outlined text-[20px]">account_tree</span>
                 </button>
@@ -101,7 +106,7 @@ function createStackCard(stack) {
                 </button>
             </div>
         </div>
-        <div class="stack-card-body border-t border-outline-variant bg-surface-container-low" id="components-${stack.project_id}" hidden>
+        <div class="stack-card-body border-t border-outline-variant/50 bg-surface-container-low" id="components-${stack.project_id}" hidden>
             <div class="py-md px-lg text-center text-secondary text-body-sm">
                 <span class="material-symbols-outlined text-[18px] animate-spin align-middle">progress_activity</span>
                 Chargement des composants...
@@ -175,15 +180,18 @@ function renderComponents(projectId, detail, stackSlug) {
     const rows = components.map(c => {
         const statusConfig = getStatusConfig(c.status);
         const kindLabel = (c.kind || '').replace('ComponentKind.', '').toLowerCase();
+        const iconStyle = getComponentIconStyle(kindLabel);
         const componentSlug = c.slug || `${stackSlug}-${kindLabel}`;
         const isFailed = c.status === 'failed';
         const componentId = c.id; // L'ID unique du composant en base
         const projectSlug = stackSlug; // Le slug du projet parent (stack) pour construire l'URL de détail      
 
         return `
-            <div class="component-row group flex items-center justify-between bg-surface-container-lowest border border-outline-variant rounded p-sm">
+            <div class="component-row group flex items-center justify-between bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-sm">
                 <div class="flex items-center gap-md min-w-0">
-                    <span class="material-symbols-outlined text-secondary text-[18px]">${getComponentIcon(kindLabel)}</span>
+                    <div class="component-icon-box ${iconStyle.bg} ${iconStyle.color}">
+                        <span class="material-symbols-outlined text-[18px]">${getComponentIcon(kindLabel)}</span>
+                    </div>
                     <span class="font-mono-code text-mono-code truncate">${escapeHtml(c.name)}</span>
                     <span class="component-kind-pill">${escapeHtml(kindLabel)}</span>
                 </div>
@@ -250,6 +258,24 @@ function attachDeleteHandler(article, stack) {
     });
 }
 
+// Palette d'avatars — même logique que dashboard.js/security.js pour rester cohérent visuellement
+const AVATAR_PALETTE = [
+    { bg: 'bg-primary-container/15', text: 'text-primary' },
+    { bg: 'bg-[#0096fd]/15', text: 'text-[#0096fd]' },
+    { bg: 'bg-[#12B76A]/15', text: 'text-[#12B76A]' },
+    { bg: 'bg-surface-container-high', text: 'text-on-surface' },
+];
+
+function hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    return Math.abs(hash);
+}
+
+function getAvatarStyle(slug) {
+    return AVATAR_PALETTE[hashString(slug || '?') % AVATAR_PALETTE.length];
+}
+
 function getComponentIcon(kindLabel) {
     const icons = {
         'database': 'database',
@@ -261,6 +287,31 @@ function getComponentIcon(kindLabel) {
         'web': 'web'
     };
     return icons[kindLabel] || 'deployed_code';
+}
+
+// Couleur par type de composant : les types connus ont une couleur fixe et
+// reconnaissable, les types inconnus piochent dans une palette de secours
+// (au lieu de tomber systématiquement sur du gris neutre).
+const COMPONENT_COLOR_MAP = {
+    'database': { bg: 'bg-[#a73a00]/8', color: 'text-[#a73a00]' },
+    'postgres': { bg: 'bg-[#a73a00]/8', color: 'text-[#a73a00]' },
+    'db': { bg: 'bg-[#a73a00]/8', color: 'text-[#a73a00]' },
+    'backend': { bg: 'bg-[#12B76A]/10', color: 'text-[#12B76A]' },
+    'api': { bg: 'bg-[#12B76A]/10', color: 'text-[#12B76A]' },
+    'frontend': { bg: 'bg-[#0096fd]/10', color: 'text-[#0096fd]' },
+    'web': { bg: 'bg-[#0096fd]/10', color: 'text-[#0096fd]' },
+};
+
+const COMPONENT_COLOR_FALLBACK = [
+    { bg: 'bg-[#8e51ff]/10', color: 'text-[#8e51ff]' }, // violet — ex. worker, queue
+    { bg: 'bg-[#e0a300]/12', color: 'text-[#a3760a]' }, // ambre — ex. cache
+    { bg: 'bg-[#ff5c8a]/10', color: 'text-[#c2185b]' }, // rose — ex. storage
+    { bg: 'bg-surface-container-high', color: 'text-secondary' }, // gris — défaut ultime
+];
+
+function getComponentIconStyle(kindLabel) {
+    if (COMPONENT_COLOR_MAP[kindLabel]) return COMPONENT_COLOR_MAP[kindLabel];
+    return COMPONENT_COLOR_FALLBACK[hashString(kindLabel || '?') % COMPONENT_COLOR_FALLBACK.length];
 }
 
 function getStatusConfig(status) {
