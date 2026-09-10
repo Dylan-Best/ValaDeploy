@@ -86,3 +86,21 @@ function executeProjectAction(slug, action, componentId) {
         }).then(handleResponse);
     });
 }
+
+// --- METRICS & ENV VARS (Ajouter à la fin de project.js) ---
+
+function getProjectMetrics(slug) {
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(`${VALA_API_URL}/api/projects/${slug}/metrics`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
+    });
+}
+
+function getProjectEnvVars(slug) {
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(`${VALA_API_URL}/api/projects/${slug}/env-vars`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
+    });
+}

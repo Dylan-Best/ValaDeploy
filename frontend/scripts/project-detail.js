@@ -1,3 +1,4 @@
+//frontend/scripts/project-detail.js
 let currentToken = null;
 let currentSlug = null;
 let currentComponentId = null;
@@ -28,7 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // 2. Démarrer les logs
       startLogsStream(currentSlug, currentComponentId, currentToken);
       
-      // 3. Configurer les boutons
+      // 3. Charger les variables d'environnement (une seule fois)
+      loadEnvVars(currentSlug);
+      
+      // 4. Configurer les boutons
       setupControlButtons(currentSlug, currentComponentId);
     },
     (error) => {
@@ -46,14 +50,24 @@ function fetchAndSetInitialStatus(slug, componentId) {
         const project = projects.find(p => p.slug === slug);
         if (!project) return;
 
+        let finalStatus = project.status;
+
         // Si c'est un composant spécifique, on va chercher son statut à lui
         if (componentId && project.id) {
             getStackDetail(project.id).then(detail => {
                 const comp = detail.components.find(c => c.id == componentId);
-                updateStatusUI(comp ? comp.status : project.status);
-            }).catch(() => updateStatusUI(project.status));
+                finalStatus = comp ? comp.status : project.status;
+                updateStatusUI(finalStatus);
+                // Démarrer le polling des métriques selon le statut
+                startMetricsPolling(slug, finalStatus);
+            }).catch(() => {
+                updateStatusUI(project.status);
+                startMetricsPolling(slug, project.status);
+            });
         } else {
-            updateStatusUI(project.status);
+            updateStatusUI(finalStatus);
+            // Démarrer le polling des métriques selon le statut
+            startMetricsPolling(slug, finalStatus);
         }
     }).catch(err => console.error("Échec récupération statut:", err));
 }
@@ -162,6 +176,9 @@ function setupControlButtons(slug, componentId) {
       const newStatus = (action === 'stop') ? 'stopped' : 'running';
       updateStatusUI(newStatus);
 
+       //  Mettre à jour le polling des métriques selon la nouvelle action
+      refreshMetricsForStatus(slug, newStatus);
+
       // 2. Reconnecter les logs automatiquement après un start ou restart
       if (action === 'start' || action === 'restart') {
          appendLogLine(terminal, `--- Reconnexion aux logs en cours (délai de 2s)... ---`, 'meta');
@@ -187,4 +204,216 @@ function setupControlButtons(slug, componentId) {
   if (btnStop) btnStop.addEventListener('click', () => callAction('stop'));
   if (btnRestart) btnRestart.addEventListener('click', () => callAction('restart'));
   if (btnStart) btnStart.addEventListener('click', () => callAction('start'));
+}
+
+// ============ METRICS & ENV VARS ============
+
+let metricsPollingInterval = null;
+const METRICS_POLL_INTERVAL = 5000; // 5 secondes
+
+/**
+ * Démarre le polling des métriques (uniquement si projet running)
+ */
+function startMetricsPolling(slug, currentStatus) {
+    stopMetricsPolling(); // Sécurité : éviter les doublons
+    
+    if (currentStatus !== 'running') {
+        renderMetricsUnavailable();
+        return;
+    }
+    
+    // Premier chargement immédiat
+    loadMetrics(slug);
+    
+    // Puis polling toutes les 5s
+    metricsPollingInterval = setInterval(() => {
+        loadMetrics(slug);
+    }, METRICS_POLL_INTERVAL);
+}
+
+/**
+ * Arrête le polling
+ */
+function stopMetricsPolling() {
+    if (metricsPollingInterval) {
+        clearInterval(metricsPollingInterval);
+        metricsPollingInterval = null;
+    }
+}
+
+/**
+ * Charge les métriques depuis l'API
+ */
+function loadMetrics(slug) {
+    getProjectMetrics(slug)
+        .then(data => {
+            renderMetrics(data);
+        })
+        .catch(err => {
+            console.error('Erreur chargement métriques:', err);
+            renderMetricsError();
+        });
+}
+
+/**
+ * Affiche les métriques dans le DOM
+ */
+function renderMetrics(data) {
+    const cpuValue = document.getElementById('cpu-value');
+    const memValue = document.getElementById('mem-value');
+    const cpuBar = document.getElementById('cpu-bar');
+    const memBar = document.getElementById('mem-bar');
+    const statusText = document.getElementById('metrics-status');
+    
+    if (!cpuValue || !memValue || !cpuBar || !memBar) return;
+    
+    if (data.container_count === 0) {
+        renderMetricsUnavailable();
+        return;
+    }
+    
+    // CPU
+    const cpuPercent = Math.min(data.total_cpu_percent, 100); // Cap à 100%
+    cpuValue.textContent = `${cpuPercent.toFixed(1)}%`;
+    cpuBar.style.width = `${cpuPercent}%`;
+    
+    // Couleur CPU selon charge
+    cpuBar.className = 'h-full transition-all duration-500 ';
+    if (cpuPercent > 80) cpuBar.classList.add('bg-red-500');
+    else if (cpuPercent > 50) cpuBar.classList.add('bg-orange-500');
+    else cpuBar.classList.add('bg-primary-container');
+    
+    // Memory
+    memValue.textContent = data.memory_usage_formatted;
+    const memPercent = data.total_memory_limit > 0 
+        ? (data.total_memory_usage / data.total_memory_limit) * 100 
+        : 0;
+    memBar.style.width = `${Math.min(memPercent, 100)}%`;
+    
+    // Couleur mémoire selon charge
+    memBar.className = 'h-full transition-all duration-500 ';
+    if (memPercent > 80) memBar.classList.add('bg-red-500');
+    else if (memPercent > 50) memBar.classList.add('bg-orange-500');
+    else memBar.classList.add('bg-tertiary-container');
+    
+    // Status text
+    if (statusText) {
+        statusText.textContent = `${data.container_count} conteneur(s) actif(s) • Mis à jour à l'instant`;
+        statusText.classList.remove('text-error');
+        statusText.classList.add('text-secondary');
+    }
+}
+
+/**
+ * Affiche l'état "indisponible" (projet stopped)
+ */
+function renderMetricsUnavailable() {
+    const cpuValue = document.getElementById('cpu-value');
+    const memValue = document.getElementById('mem-value');
+    const cpuBar = document.getElementById('cpu-bar');
+    const memBar = document.getElementById('mem-bar');
+    const statusText = document.getElementById('metrics-status');
+    
+    if (cpuValue) cpuValue.textContent = '0%';
+    if (memValue) memValue.textContent = '0B / 0B';
+    if (cpuBar) cpuBar.style.width = '0%';
+    if (memBar) memBar.style.width = '0%';
+    
+    if (statusText) {
+        statusText.textContent = 'Projet arrêté — aucune métrique disponible';
+        statusText.classList.remove('text-error');
+        statusText.classList.add('text-secondary');
+    }
+}
+
+/**
+ * Affiche une erreur de chargement
+ */
+function renderMetricsError() {
+    const statusText = document.getElementById('metrics-status');
+    if (statusText) {
+        statusText.textContent = ' Erreur de chargement des métriques';
+        statusText.classList.add('text-error');
+    }
+}
+
+/**
+ * Charge et affiche les variables d'environnement
+ */
+function loadEnvVars(slug) {
+    const container = document.getElementById('env-vars-container');
+    if (!container) return;
+    
+    getProjectEnvVars(slug)
+        .then(data => {
+            renderEnvVars(container, data.variables);
+        })
+        .catch(err => {
+            console.error('Erreur chargement env vars:', err);
+            container.innerHTML = '<div class="text-error text-body-sm">⚠ Impossible de charger les variables</div>';
+        });
+}
+
+/**
+ * Rend les variables d'environnement dans le DOM
+ */
+function renderEnvVars(container, variables) {
+    if (!variables || variables.length === 0) {
+        container.innerHTML = '<div class="text-secondary text-body-sm italic">Aucune variable définie</div>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    variables.forEach(envVar => {
+        const div = document.createElement('div');
+        div.className = 'group flex flex-col p-sm rounded border border-transparent hover:border-outline-variant hover:bg-surface-container-lowest transition-all';
+        
+        const keySpan = document.createElement('span');
+        keySpan.className = 'font-mono-code text-[12px] text-secondary';
+        keySpan.textContent = envVar.key;
+        
+        const valueWrapper = document.createElement('div');
+        valueWrapper.className = 'flex items-center justify-between gap-2';
+        
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'font-mono-code text-body-sm text-on-surface truncate';
+        valueSpan.textContent = envVar.value;
+        valueSpan.id = `env-value-${envVar.key}`;
+        
+        valueWrapper.appendChild(valueSpan);
+        
+        // Bouton eye pour les vars sensibles (pour le moment, juste visuel)
+        if (envVar.is_sensitive) {
+            const eyeBtn = document.createElement('button');
+            eyeBtn.className = 'text-secondary opacity-0 group-hover:opacity-100 transition-opacity';
+            eyeBtn.title = 'Révéler la valeur (bientôt)';
+            eyeBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">visibility</span>';
+            eyeBtn.addEventListener('click', () => {
+                ValaToast.show({ 
+                    type: 'info', 
+                    title: 'Fonctionnalité à venir', 
+                    message: 'La révélation de valeurs sensibles sera disponible prochainement.' 
+                });
+            });
+            valueWrapper.appendChild(eyeBtn);
+        }
+        
+        div.appendChild(keySpan);
+        div.appendChild(valueWrapper);
+        container.appendChild(div);
+    });
+}
+
+/**
+ * Met à jour le polling des métriques quand le statut change
+ * (appelée après une action start/stop/restart)
+ */
+function refreshMetricsForStatus(slug, newStatus) {
+    if (newStatus === 'running') {
+        startMetricsPolling(slug, 'running');
+    } else {
+        stopMetricsPolling();
+        renderMetricsUnavailable();
+    }
 }

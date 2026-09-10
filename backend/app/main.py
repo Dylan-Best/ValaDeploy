@@ -11,6 +11,7 @@ from app.api.routes_projects import router as project_router
 from app.api.routes_security import router as security_router
 from app.api.routes_stack import router as stack_router
 from app.api.routes_deployment import router as deployment_router
+from app.api.routes_metrics import router as metrics_router
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.boostrap import bootstrap_initial_admin
@@ -43,6 +44,7 @@ app.include_router(auth_router, prefix="/api/auth")
 app.include_router(project_router, prefix="/api")
 app.include_router(security_router, prefix="/api")
 app.include_router(deployment_router, prefix="/api")
+app.include_router(metrics_router, prefix="/api")
 
 @app.get("/")
 def show_message():
