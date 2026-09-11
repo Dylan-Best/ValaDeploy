@@ -229,7 +229,14 @@ function attachDeleteHandler(article, stack) {
     btn.addEventListener('click', async (event) => {
         event.stopPropagation();
 
-        const confirmed = window.confirm(`Supprimer la stack "${stack.slug}" ? Cette action est irréversible.`);
+        const confirmed = await ValaModal.confirm({
+            title: "Supprimer la stack",
+            message: `Supprimer définitivement la stack "${stack.slug}" ? Cette action est irréversible et supprimera tous les conteneurs et configurations associés.`,
+            confirmLabel: "Supprimer",
+            cancelLabel: "Annuler",
+            variant: "danger"
+        });
+        
         if (!confirmed) return;
 
         btn.disabled = true;

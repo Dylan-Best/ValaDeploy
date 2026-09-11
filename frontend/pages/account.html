@@ -19,6 +19,8 @@
 <body class="antialiased text-on-surface" data-page="account">
 
 <div data-component="../components/toast-container.html"></div>
+    <!-- Composant modal de confirmation (chargé une seule fois par page) -->
+<div data-component="../components/confirm-modal.html"></div>
 
 <!-- Wrapper isolant la mise en page (flex + min-h-screen) du <body> global,
      pour ne pas casser d'autres pages qui réutiliseraient un <body> différent. -->
@@ -26,6 +28,8 @@
 
     <!-- Sidebar (composant réutilisable) -->
     <div data-component="../components/sidebar.html"></div>
+
+
 
     <!-- Main Content Canvas -->
     <main class="ml-64 flex-1 flex flex-col w-full max-w-max-width mx-auto px-margin-desktop py-xl">
@@ -138,8 +142,6 @@
     </main>
 </div>
 
-<!-- Composant modal de confirmation (chargé une seule fois par page) -->
-<div data-component="../components/confirm-modal.html"></div>
 
 
 <!-- Script de chargement des composants -->

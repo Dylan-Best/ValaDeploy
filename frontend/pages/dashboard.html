@@ -19,6 +19,8 @@
 <!-- Shared Component: SideNavBar and toast container -->
 <div data-component="../components/sidebar.html"></div>
 <div data-component="../components/toast-container.html"></div>
+    <!-- Composant modal de confirmation (chargé une seule fois par page) -->
+<div data-component="../components/confirm-modal.html"></div>
 
 <!-- Main Content Area -->
 <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
@@ -32,7 +34,7 @@
 </div>
 <div class="flex items-center gap-lg">
     <span id="user-fullname" class="font-label-sm text-label-sm text-secondary"></span>
-    <a href="new-project.html" class="bg-primary text-on-primary px-lg py-sm rounded-lg flex items-center gap-sm font-label-md text-label-md transition-opacity hover:opacity-90">
+    <a href="new-project.html" class="bg-primary text-on-primary px-lg py-sm rounded-lg flex items-center gap-sm font-label-md text-label-md transition-all duration-150 hover:opacity-90 active:scale-[0.97]">
         <span class="material-symbols-outlined text-[18px]">add</span>
         New Project
     </a>
@@ -51,7 +53,7 @@
 <!-- Statistics Grid -->
 <section class="grid grid-cols-1 md:grid-cols-3 gap-lg mb-xl">
     <!-- Stat Card 1 -->
-    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm">
+    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-xs text-secondary">
                 <span class="material-symbols-outlined text-[18px]">folder</span>
@@ -65,7 +67,7 @@
         </div>
     </div>
     <!-- Stat Card 2 -->
-    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm">
+    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-xs text-secondary">
                 <span class="material-symbols-outlined text-[18px]">radar</span>
@@ -82,7 +84,7 @@
         </div>
     </div>
     <!-- Stat Card 3 -->
-    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm">
+    <div class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-lg flex flex-col gap-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-xs text-secondary">
                 <span class="material-symbols-outlined text-[18px]">memory</span>
@@ -104,13 +106,13 @@
 <section class="bg-surface-container-lowest border border-outline-variant/50 rounded-lg overflow-hidden">
 
     <!-- Filter bar -->
-    <div class="flex items-center justify-between px-lg py-md border-b border-outline-variant/50">
+    <div class="flex items-center justify-between px-lg py-md border-b border-outline-variant/50 gap-lg">
         <div class="relative w-full max-w-[320px]">
-            <span class="material-symbols-outlined text-[18px] text-secondary absolute left-sm top-1/2 -translate-y-1/2">search</span>
-            <input id="project-filter" type="text" placeholder="Filter projects..."
-                class="w-full pl-xl pr-md py-sm border border-outline-variant/50 rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-secondary focus:outline-none focus:ring-1 focus:ring-primary">
+            <span class="material-symbols-outlined text-[18px] text-secondary absolute left-md top-1/2 -translate-y-1/2 pointer-events-none">search</span>
+            <input id="project-filter" type="text" placeholder="Rechercher un projet..."
+                class="w-full pl-[40px] pr-md py-sm border border-outline-variant/50 rounded-full font-body-sm text-body-sm text-on-surface placeholder:text-secondary bg-surface transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary">
         </div>
-        <span id="showing-count" class="font-body-sm text-body-sm text-secondary shrink-0">Showing 7 of 20 projects</span>
+        <span id="showing-count" class="font-body-sm text-body-sm text-secondary shrink-0 whitespace-nowrap">Showing 0 of 0 projects</span>
     </div>
 
     <div class="w-full overflow-x-auto">
@@ -140,7 +142,7 @@
                     <td colspan="5" class="py-xl text-center text-secondary">
                         <span class="material-symbols-outlined text-4xl block mb-sm">folder_open</span>
                         <p>Aucun projet pour le moment</p>
-                        <a href="new-project.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90">
+                        <a href="new-project.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90 transition-all duration-150 active:scale-[0.97]">
                             Créer votre premier projet
                         </a>
                     </td>
@@ -151,10 +153,10 @@
 
     <!-- Pagination -->
     <div class="flex items-center justify-between px-lg py-md border-t border-outline-variant/50">
-        <span id="workspace-label" class="font-body-sm text-body-sm text-secondary">Enterprise Workspace · production-cluster-01</span>
+        <span id="page-indicator" class="font-body-sm text-body-sm text-secondary">Page 1 sur 1</span>
         <div class="flex items-center gap-sm">
-            <button id="prev-page" class="px-md py-xs border border-outline-variant/50 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low transition-colors disabled:opacity-40" disabled>Previous</button>
-            <button id="next-page" class="px-md py-xs border border-outline-variant/50 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low transition-colors">Next</button>
+            <button id="prev-page" class="px-md py-xs border border-outline-variant/50 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low hover:text-on-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>Previous</button>
+            <button id="next-page" class="px-md py-xs border border-outline-variant/50 rounded-lg font-label-md text-label-md text-secondary hover:bg-surface-container-low hover:text-on-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>Next</button>
         </div>
     </div>
 </section>
@@ -167,5 +169,6 @@
 <script src="../scripts/api/project.js"></script>
 <script src="../scripts/components.js"></script>
 <script src="../scripts/toast.js"></script>
+<script src="../scripts/confirm-modal.js"></script>
 <script src="../scripts/dashboard.js"></script>
 </body></html>

@@ -39,3 +39,19 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.35; }
 }
+
+/* Micro-interactions — apparition douce des lignes du tableau */
+@keyframes row-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.project-row {
+    animation: row-fade-in 0.22s ease-out both;
+}
+
+/* Bouton de suppression — visible au focus clavier même si la ligne n'est pas survolée */
+.delete-project-btn:focus-visible {
+    opacity: 1;
+    outline: 2px solid #ba1a1a;
+    outline-offset: 2px;
+}

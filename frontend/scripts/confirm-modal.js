@@ -1,6 +1,13 @@
-// js/confirm-modal.js
+// scripts/confirm-modal.js
 //
 // API globale pour le composant components/confirm-modal.html
+//
+// Le composant est 100% autonome visuellement : tout le CSS nécessaire
+// (couleurs, espacements, radius, police) est injecté ici en dur, sans
+// dépendre des tokens Tailwind custom de la page hôte (bg-danger-red,
+// text-primary-dark, px-lg, etc.). Ainsi il rend pareil sur toutes les
+// pages, quelle que soit leur config Tailwind (account.tailwind.config.js,
+// dashboard.tailwind.config.js, ...).
 //
 // Utilisation :
 //   const ok = await ValaModal.confirm({
@@ -18,20 +25,128 @@
 const ValaModal = (() => {
     let resolvePromise = null;
 
-    // Injecte le CSS du modal une seule fois, sans avoir besoin d'un
-    // <link> manuel dans le <head> de chaque page.
     function injectStyles() {
         if (document.getElementById("vala-modal-styles")) return;
 
         const style = document.createElement("style");
         style.id = "vala-modal-styles";
         style.textContent = `
-            #vala-modal-overlay { display: none; }
-            #vala-modal-overlay.vala-modal-open { display: flex; }
-            #vala-modal-overlay.vala-modal-visible #vala-modal-card {
+            .vala-modal-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0, 0, 0, 0.45);
+                backdrop-filter: blur(1px);
+                -webkit-backdrop-filter: blur(1px);
+                padding: 16px;
+                box-sizing: border-box;
+            }
+            .vala-modal-overlay.vala-modal-open {
+                display: flex;
+            }
+
+            .vala-modal-card {
+                width: 100%;
+                max-width: 384px;
+                background: #ffffff;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+                padding: 24px;
+                box-sizing: border-box;
+                opacity: 0;
+                transform: scale(0.95);
+                transition: opacity 150ms ease, transform 150ms ease;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            }
+            .vala-modal-overlay.vala-modal-visible .vala-modal-card {
                 opacity: 1;
                 transform: scale(1);
             }
+
+            .vala-modal-icon-wrap {
+                width: 44px;
+                height: 44px;
+                border-radius: 9999px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 16px;
+            }
+            .vala-modal-icon-wrap.vala-modal-icon-wrap-danger {
+                background: rgba(220, 38, 38, 0.12);
+            }
+            .vala-modal-icon-wrap.vala-modal-icon-wrap-default {
+                background: #f3f4f6;
+            }
+
+            .vala-modal-icon {
+                font-size: 22px;
+                line-height: 1;
+            }
+            .vala-modal-icon.vala-modal-icon-danger {
+                color: #dc2626;
+            }
+            .vala-modal-icon.vala-modal-icon-default {
+                color: #f97316;
+            }
+
+            .vala-modal-title {
+                margin: 0 0 4px 0;
+                font-size: 18px;
+                line-height: 24px;
+                font-weight: 600;
+                color: #111827;
+            }
+
+            .vala-modal-message {
+                margin: 0 0 24px 0;
+                font-size: 14px;
+                line-height: 20px;
+                color: #6b7280;
+            }
+
+            .vala-modal-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+
+            .vala-modal-btn {
+                font-size: 14px;
+                font-weight: 500;
+                padding: 8px 20px;
+                border-radius: 8px;
+                border: 1px solid transparent;
+                cursor: pointer;
+                transition: opacity 150ms ease, background-color 150ms ease;
+                box-sizing: border-box;
+            }
+
+            .vala-modal-btn-cancel {
+                background: #ffffff;
+                border-color: #e5e7eb;
+                color: #111827;
+            }
+            .vala-modal-btn-cancel:hover {
+                background: #f3f4f6;
+            }
+
+            .vala-modal-btn-confirm.vala-modal-btn-danger {
+                background: #dc2626;
+                color: #ffffff;
+            }
+            .vala-modal-btn-confirm.vala-modal-btn-default {
+                background: #f97316;
+                color: #ffffff;
+            }
+            .vala-modal-btn-confirm:hover {
+                opacity: 0.9;
+            }
+
             body.vala-modal-locked { overflow: hidden; }
         `;
         document.head.appendChild(style);
@@ -39,18 +154,20 @@ const ValaModal = (() => {
 
     injectStyles();
 
+    // Variantes : classes purement internes au composant (vala-modal-*),
+    // aucune dépendance à la config Tailwind de la page hôte.
     const VARIANTS = {
         danger: {
-            iconWrapClass: "bg-error-container/30",
-            iconClass: "text-danger-red",
+            iconWrapClass: "vala-modal-icon-wrap-danger",
+            iconClass: "vala-modal-icon-danger",
             icon: "warning",
-            confirmClass: "bg-danger-red text-white hover:opacity-90"
+            confirmClass: "vala-modal-btn-danger"
         },
         default: {
-            iconWrapClass: "bg-surface-container-highest",
-            iconClass: "text-primary",
+            iconWrapClass: "vala-modal-icon-wrap-default",
+            iconClass: "vala-modal-icon-default",
             icon: "help",
-            confirmClass: "bg-primary-orange text-white hover:opacity-90"
+            confirmClass: "vala-modal-btn-default"
         }
     };
 
@@ -73,7 +190,6 @@ const ValaModal = (() => {
         overlay.classList.remove("vala-modal-visible");
         document.body.classList.remove("vala-modal-locked");
 
-        // Laisse la transition de fermeture se jouer avant de masquer le bloc
         setTimeout(() => {
             overlay.classList.remove("vala-modal-open");
             overlay.setAttribute("aria-hidden", "true");
@@ -101,11 +217,7 @@ const ValaModal = (() => {
         const els = getEls();
 
         if (!els.overlay) {
-            console.error(
-                "ValaModal : composant introuvable. Vérifiez que " +
-                '<div data-component="components/confirm-modal.html"></div> ' +
-                "est bien présent sur la page."
-            );
+            console.error("ValaModal : composant introuvable. Vérifiez l'inclusion du HTML.");
             return Promise.resolve(false);
         }
 
@@ -116,36 +228,36 @@ const ValaModal = (() => {
         els.confirmBtn.textContent = confirmLabel;
         els.cancelBtn.textContent = cancelLabel;
 
-        els.iconWrap.className = "w-11 h-11 rounded-full flex items-center justify-center mb-md " + style.iconWrapClass;
-        els.icon.className = "material-symbols-outlined " + style.iconClass;
-        els.icon.style.fontSize = "22px";
+        // Icône
+        els.iconWrap.className = "vala-modal-icon-wrap " + style.iconWrapClass;
+        els.icon.className = "material-symbols-outlined vala-modal-icon " + style.iconClass;
         els.icon.textContent = style.icon;
 
-        els.confirmBtn.className = "font-label-md text-label-md px-lg py-sm rounded-DEFAULT transition-opacity " + style.confirmClass;
+        // Bouton confirmer
+        els.confirmBtn.className = "vala-modal-btn vala-modal-btn-confirm " + style.confirmClass;
 
-        // (Ré)attache les handlers à chaque ouverture pour éviter les doublons
+        // Bouton annuler (toujours la même apparence, quelle que soit la variante)
+        els.cancelBtn.className = "vala-modal-btn vala-modal-btn-cancel";
+
+        // Clone pour éviter l'accumulation d'écouteurs d'événements
         const newConfirmBtn = els.confirmBtn.cloneNode(true);
         els.confirmBtn.parentNode.replaceChild(newConfirmBtn, els.confirmBtn);
+
         const newCancelBtn = els.cancelBtn.cloneNode(true);
         els.cancelBtn.parentNode.replaceChild(newCancelBtn, els.cancelBtn);
 
         newConfirmBtn.addEventListener("click", () => close(true));
         newCancelBtn.addEventListener("click", () => close(false));
-        els.overlay.addEventListener(
-            "click",
-            (e) => {
-                if (e.target === els.overlay) close(false);
-            },
-            { once: true }
-        );
+
+        els.overlay.onclick = (e) => {
+            if (e.target === els.overlay) close(false);
+        };
 
         els.overlay.classList.add("vala-modal-open");
         els.overlay.setAttribute("aria-hidden", "false");
         document.body.classList.add("vala-modal-locked");
         document.addEventListener("keydown", onKeydown);
 
-        // requestAnimationFrame pour laisser le "display:flex" s'appliquer
-        // avant de déclencher la transition d'ouverture
         requestAnimationFrame(() => {
             els.overlay.classList.add("vala-modal-visible");
         });

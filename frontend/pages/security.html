@@ -12,6 +12,9 @@
 <body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden flex h-screen" data-page="security">
 <div data-component="../components/sidebar.html"></div>
 <div data-component="../components/toast-container.html"></div>
+    <!-- Composant modal de confirmation (chargé une seule fois par page) -->
+<div data-component="../components/confirm-modal.html"></div>
+
 <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
 <div class="max-w-max-width mx-auto px-margin-desktop py-xl">
 
@@ -96,6 +99,7 @@
 </main>
 <script src="../scripts/components.js"></script>
 <script src="../scripts/toast.js"></script>
+<script src="../scripts/confirm-modal.js"></script>
 <script src="../scripts/api/auth.js"></script>
 <script src="../scripts/api/security.js"></script>
 <script src="../scripts/security.js"></script>

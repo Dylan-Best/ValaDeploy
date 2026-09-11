@@ -72,7 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.href = "login.html";
           })
           .catch(error => {
-            alert(error.message);
+            ValaToast.show({ type: 'error', title: 'Erreur', message: error.message });
+
           });
       }
     });
@@ -110,17 +111,17 @@ function setupPasswordChangeForm(accessToken) {
 
       // Validations
       if (!oldPass || !newPass || !confirmPass) {
-        ValaToast.show("Veuillez remplir tous les champs.", "error");
+        ValaToast.show({ type: 'error', title: 'Champs manquants', message: "Veuillez remplir tous les champs." });
         return;
       }
 
       if (newPass !== confirmPass) {
-        ValaToast.show("Les mots de passe ne correspondent pas.", "error");
+        ValaToast.show({ type: 'error', title: 'Erreur', message: "Les mots de passe ne correspondent pas." });
         return;
       }
 
       if (newPass.length < 8) {
-        ValaToast.show("Le mot de passe doit faire au moins 8 caractères.", "error");
+        ValaToast.show({ type: 'error', title: 'Mot de passe trop court', message: "Le mot de passe doit faire au moins 8 caractères." });
         return;
       }
 
@@ -132,7 +133,8 @@ function setupPasswordChangeForm(accessToken) {
       try {
         await changePassword(oldPass, newPass);
         
-        ValaToast.show("Mot de passe modifié avec succès !", "success");
+        ValaToast.show({ type: 'success', title: 'Succès', message: "Mot de passe modifié avec succès !" });
+
         
         // Recharge la page pour réafficher tout le profil
         setTimeout(() => {
@@ -140,7 +142,8 @@ function setupPasswordChangeForm(accessToken) {
         }, 1500);
         
       } catch (error) {
-        ValaToast.show(error.message || "Erreur lors du changement de mot de passe", "error");
+        ValaToast.show({ type: 'error', title: 'Erreur', message: error.message || "Erreur lors du changement de mot de passe" });
+
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
       }

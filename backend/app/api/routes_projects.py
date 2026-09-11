@@ -397,3 +397,23 @@ async def retry_build(
         )
     
     return {"message": "Build relancé avec succès"}
+
+@router.delete("/projects/{project_id}")
+def delete_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Supprime un projet mono-service (ou une stack, la logique est générique)
+    et nettoie ses ressources Docker associées.
+    """
+    project = ProjectService.get_project_by_id(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Projet introuvable ou non autorisé.")
+
+    success = ProjectService.delete_project_and_containers(db, project_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Échec de la suppression du projet.")
+
+    return {"message": "Projet supprimé avec succès."}

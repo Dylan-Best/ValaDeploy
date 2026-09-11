@@ -30,10 +30,14 @@ def scan_image(image_name: str, skip_security_gate: bool = False) -> dict:
     if scan.returncode != 0:
         raise ValueError(f"Error occurred while scanning image: {scan.stderr}")
 
-    scan_results = json.loads(scan.stdout)
+    try:
+        scan_results = json.loads(scan.stdout)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Impossible de parser la sortie JSON de Trivy: {e}")
 
     severity_count = {}
     critical_vulns = []
+    critical_fixable_count = 0
 
     for result in scan_results.get('Results', []):
         for vulnerability in result.get('Vulnerabilities', []):
@@ -41,22 +45,29 @@ def scan_image(image_name: str, skip_security_gate: bool = False) -> dict:
             severity_count[severity] = severity_count.get(severity, 0) + 1
 
             if severity == 'CRITICAL':
+                fixed_version = vulnerability.get('FixedVersion')
+                is_fixed = bool(fixed_version)
+
                 critical_vulns.append({
                     "id": vulnerability.get("VulnerabilityID"),
                     "package": vulnerability.get("PkgName"),
                     "installed_version": vulnerability.get("InstalledVersion"),
-                    "fixed_version": vulnerability.get("FixedVersion"),
+                    "fixed_version": fixed_version,
                     "title": vulnerability.get("Title"),
-                    "fixed": False,
+                    "fixed": is_fixed,
                 })
 
+                if is_fixed:
+                    critical_fixable_count += 1
+
     return {
-        "severity_count": severity_count,
-        "critical_vulnerabilities": critical_vulns,
+        "severity_count": severity_count,          # inclut bien LOW/MEDIUM/HIGH/CRITICAL, fixables ou non
+        "critical_vulnerabilities": critical_vulns, # toutes les CRITICAL, avec leur statut "fixed"
+        "critical_fixable_count": critical_fixable_count,
         # TEMPORAIRE (test) : si skip_security_gate=True, on garde les résultats
         # réels du scan mais on force "blocking" à False pour laisser passer le
         # déploiement malgré la vulnérabilité critique détectée.
-        "blocking": False if skip_security_gate else severity_count.get('CRITICAL', 0) > 0
+        "blocking": False if skip_security_gate else critical_fixable_count > 0,
     }
 
 

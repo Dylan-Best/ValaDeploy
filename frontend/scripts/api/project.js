@@ -41,6 +41,15 @@ function getDashboardStats() {
     });
 }
 
+function deleteProject(projectId) {
+    return fetchWithAutoRefresh(function(token) {
+        return fetch(`${VALA_API_URL}/api/projects/${projectId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).then(handleResponse);
+    });
+}
+
 // ---------- STACKS ----------
 
 function getStacks() {

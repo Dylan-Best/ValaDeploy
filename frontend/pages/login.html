@@ -14,6 +14,9 @@
 </head>
 <body class="min-h-screen flex flex-col md:flex-row font-body-sm text-body-sm antialiased bg-surface">
 <div data-component="../components/toast-container.html"></div>
+    <!-- Composant modal de confirmation (chargé une seule fois par page) -->
+<div data-component="../components/confirm-modal.html"></div>
+
 
     <div class="hidden md:flex md:w-1/2 bg-on-surface items-center justify-center p-xl relative overflow-hidden">
 <div class="relative z-10 text-center">
@@ -79,5 +82,6 @@
 <script src="../scripts/config.js"></script>
 <script src="../scripts/api/auth.js"></script>
 <script src="../scripts/toast.js"></script>
+<script src="../scripts/confirm-modal.js"></script>
 <script src="../scripts/login.js"></script>
 </body></html>

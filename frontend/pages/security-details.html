@@ -13,6 +13,9 @@
 <!-- Shared Component: SideNavBar (identique aux autres pages) -->
 <div data-component="../components/sidebar.html"></div>
 <div data-component="../components/toast-container.html"></div>
+    <!-- Composant modal de confirmation (chargé une seule fois par page) -->
+<div data-component="../components/confirm-modal.html"></div>
+
 <!-- Main Content Area -->
 <main class="flex-1 ml-64 h-full overflow-y-auto bg-background">
 <div class="max-w-4xl mx-auto px-margin-desktop py-xl space-y-xl">
@@ -28,10 +31,10 @@
 <p class="font-body-md text-body-md text-secondary">Last scan <span class="text-on-surface">2 minutes ago</span></p>
 </div>
 <div class="flex items-center gap-md">
-<div class="font-label-md text-label-md" id="scan-status-badge">loading...</div>
-<button class="bg-primary-container text-white font-label-md text-label-md px-lg py-sm rounded-full hover:opacity-90 transition-opacity flex items-center gap-sm whitespace-nowrap" type="button">
-<span class="material-symbols-outlined text-[18px]">replay</span> Re-scan
-                    </button>
+    <div class="font-label-md text-label-md" id="scan-status-badge">loading...</div>
+    <button id="rescan-btn" class="bg-primary-container text-white font-label-md text-label-md px-lg py-sm rounded-full hover:opacity-90 transition-opacity flex items-center gap-sm whitespace-nowrap" type="button">
+        <span class="material-symbols-outlined text-[18px]">replay</span> Re-scan
+    </button>
 </div>
 </div>
 <!-- Trivy: vulnerability counts -->
@@ -70,6 +73,7 @@
 </main>
 <script src="../scripts/components.js"></script>
 <script src="../scripts/toast.js"></script>
+<script src="../scripts/confirm-modal.js"></script>
 <script src="../scripts/api/auth.js"></script>
 <script src="../scripts/api/security.js"></script>
 <script src="../scripts/security-details.js"></script>

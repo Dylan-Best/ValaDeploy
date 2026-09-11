@@ -2,7 +2,21 @@
 //scripts/security-details.js
 document.addEventListener('DOMContentLoaded', () => {
     const slug = new URLSearchParams(window.location.search).get('slug') || 'unknown-project';
-    document.getElementById('project-slug').textContent = slug;
+    const slugEl = document.getElementById('project-slug');
+    if (slugEl) slugEl.textContent = slug;
+
+    // Gestion du bouton Re-scan
+    const rescanBtn = document.getElementById('rescan-btn');
+    if (rescanBtn) {
+        rescanBtn.addEventListener('click', () => {
+            ValaToast.show({
+                type: 'info',
+                title: 'Information',
+                message: 'La fonctionnalité de re-scan manuel est à venir.',
+                duration: 3000
+            });
+        });
+    }
 
     initUserSession(
         async () => {
@@ -25,8 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Erreur chargement rapport de sécurité:', error);
                 const badge = document.getElementById('scan-status-badge');
-                badge.textContent = 'Erreur de chargement';
-                badge.className = 'flex items-center gap-2 px-4 py-2 border border-error text-error rounded-full font-label-md text-label-md bg-white';
+                if (badge) {
+                    badge.textContent = 'Erreur de chargement';
+                    badge.className = 'flex items-center gap-2 px-4 py-2 border border-error text-error rounded-full font-label-md text-label-md bg-white';
+                }
             }
         },
         (error) => {
@@ -35,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     );
 });
+
+// ... (fonctions renderSummary, renderTrivyCounts, renderGitleaksResult inchangées)
 
 function renderSummary(trivyResult, gitleaksResult) {
     const badge = document.getElementById('scan-status-badge');

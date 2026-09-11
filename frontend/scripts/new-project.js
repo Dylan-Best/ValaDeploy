@@ -29,23 +29,45 @@ function slugify(text) {
         .replace(/^-|-$/g, '');
 }
 
+// Détermine le vrai identifiant serveur à afficher dans l'aperçu, avec repli
+// sur le placeholder si aucune config n'est disponible côté client.
+function getServerHost() {
+    if (window.ValaConfig && window.ValaConfig.serverIp) {
+        return window.ValaConfig.serverIp;
+    }
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+        return host;
+    }
+    return '<server-ip>';
+}
+
+function renderSlugPreview(rawValue) {
+    const preview = document.getElementById('slug-preview');
+    if (!preview) return;
+    const slug = slugify(rawValue || '') || 'your-project';
+    preview.textContent = `${slug}.${getServerHost()}.sslip.io`;
+}
+
 function setupSlugPreview() {
     const nameInput = document.getElementById('projectName');
-    const preview = document.getElementById('slug-preview');
-    if (!nameInput || !preview) return;
+    if (!nameInput) return;
+
+    // Synchronise l'aperçu dès le chargement avec le vrai slug/host,
+    // au lieu de laisser le texte statique par défaut.
+    renderSlugPreview(nameInput.value);
 
     nameInput.addEventListener('input', () => {
-        const slug = slugify(nameInput.value) || 'your-project';
-        preview.textContent = `${slug}.<server-ip>.sslip.io`;
+        renderSlugPreview(nameInput.value);
     });
 }
 
 // --- Lignes de variables d'environnement dynamiques ---
 function createEnvVarRow() {
     const row = document.createElement('div');
-    row.className = 'flex gap-sm items-center env-var-row';
+    row.className = 'flex gap-sm items-center env-var-row env-var-row-enter';
     row.innerHTML = `
-        <div class="flex-1 flex rounded-lg border border-outline-variant focus-within:border-on-surface transition-colors overflow-hidden">
+        <div class="flex-1 flex rounded-lg border border-outline-variant field-wrap overflow-hidden">
             <input class="env-key w-1/3 bg-surface-container-low border-0 border-r border-outline-variant px-md py-sm font-mono-code text-body-sm text-on-surface focus:ring-0" placeholder="KEY" type="text">
             <input class="env-value flex-1 bg-transparent border-0 px-md py-sm font-mono-code text-body-sm text-on-surface focus:ring-0" placeholder="VALUE" type="text">
         </div>
@@ -53,7 +75,7 @@ function createEnvVarRow() {
             <input class="env-secret rounded border-outline-variant text-primary focus:ring-primary" type="checkbox">
             <label class="font-label-md text-label-md text-on-surface-variant">Secret</label>
         </div>
-        <button class="remove-env-var p-xs text-on-surface-variant hover:text-error transition-colors" type="button">
+        <button class="remove-env-var p-xs text-on-surface-variant hover:text-error transition-colors duration-200" type="button">
             <span class="material-symbols-outlined text-[20px]">delete</span>
         </button>
     `;
@@ -66,6 +88,11 @@ function createEnvVarRow() {
     });
 
     row.querySelector('.remove-env-var').addEventListener('click', () => row.remove());
+
+    // Retire la classe d'entrée après l'animation pour ne pas la rejouer
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => row.classList.remove('env-var-row-enter'));
+    });
 
     return row;
 }
@@ -150,6 +177,8 @@ function setupFormSubmit() {
         const gitUrl = document.getElementById('gitUrl')?.value.trim();
         const branch = document.getElementById('branch')?.value.trim() || 'main';
         const replicas = parseInt(document.getElementById('replicas')?.value, 10) || 1;
+        const portValue = document.getElementById('port')?.value;
+        const port = portValue ? parseInt(portValue, 10) : null;
 
         // 2. Validation basique
         if (!projectName) {
@@ -167,6 +196,7 @@ function setupFormSubmit() {
             repo_url: gitUrl,
             branch: branch,
             replica: replicas,
+            port: port,
             envs_var: collectEnvVars(),
         };
 
