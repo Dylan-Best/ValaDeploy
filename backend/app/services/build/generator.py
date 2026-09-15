@@ -1,6 +1,25 @@
+#app.services.build.generator
 import logging
 from pathlib import Path
 from .detector import ProjectType
+
+import shutil
+
+# Chaque entrée : (nom du fichier dans templates/assets/, nom qu'il doit avoir
+# une fois copié à la racine du contexte de build, pour matcher le COPY du Dockerfile)
+REQUIRED_ASSETS = {
+    ProjectType.REACT_VITE: [
+        ("react_vite__nginx.conf.template", "nginx.conf.template"),
+    ],
+    ProjectType.LARAVEL: [
+        ("laravel__docker-entrypoint.sh", "docker-entrypoint.sh"),
+        ("laravel__nginx.conf.template", "nginx.conf.template"),
+    ],
+    ProjectType.LARAVEL_MONOLITH: [
+        ("laravel_monolith__docker-entrypoint.sh", "docker-entrypoint.sh"),
+    ],
+    # NODEJS / PYTHON : pas d'assets, on omet simplement la clé
+}
 
 logger = logging.getLogger(__name__)
 def generate_dockerfile(project_type: ProjectType, project_path: str) -> dict:
@@ -18,7 +37,6 @@ def generate_dockerfile(project_type: ProjectType, project_path: str) -> dict:
     """
     path = Path(project_path)
 
-    # Si Dockerfile existant, on le réutilise
     if project_type == ProjectType.DOCKERFILE:
         dockerfile_path = path / "Dockerfile"
         logger.info(f"Utilisation du Dockerfile existant: {dockerfile_path}")
@@ -27,7 +45,6 @@ def generate_dockerfile(project_type: ProjectType, project_path: str) -> dict:
     if project_type == ProjectType.UNKNOWN:
         raise ValueError("Impossible de générer un Dockerfile : type de projet inconnu.")
 
-    # Mapping des types vers les fichiers templates
     template_files = {
         ProjectType.REACT_VITE: 'react_vite.dockerfile',
         ProjectType.LARAVEL: 'laravel.dockerfile',
@@ -40,21 +57,31 @@ def generate_dockerfile(project_type: ProjectType, project_path: str) -> dict:
     if not template_file_name:
         raise ValueError(f"Aucun template disponible pour le type : {project_type}")
 
-    # Chemin vers le template
     templates_dir = Path(__file__).parent.parent.parent / "templates"
     template_file_path = templates_dir / template_file_name
 
     if not template_file_path.is_file():
         raise ValueError(f"Template introuvable: {template_file_path}")
 
-    # Lecture du template
     with open(template_file_path, 'r', encoding='utf-8') as f:
         template_content = f.read()
 
-    # Écriture du Dockerfile dans le projet
     dockerfile_path = path / "Dockerfile"
     with open(dockerfile_path, 'w', encoding='utf-8') as f:
         f.write(template_content)
 
     logger.info(f"Dockerfile généré avec succès pour le type : {project_type.value}")
+
+    # --- Copie des fichiers annexes requis par ce Dockerfile (nginx conf, entrypoint...) ---
+    # Ces fichiers appartiennent à ValaDeploy (pas au repo utilisateur cloné) : ils doivent
+    # être injectés dans le contexte de build, sinon les instructions COPY du Dockerfile
+    # échouent puisque le repo cloné ne les contient jamais.
+    assets_dir = templates_dir / "assets"
+    for asset_name, target_name in REQUIRED_ASSETS.get(project_type, []):
+        source = assets_dir / asset_name
+        if not source.is_file():
+            raise ValueError(f"Asset requis introuvable: {source}")
+        shutil.copy2(source, path / target_name)
+        logger.info(f"Asset copié: {asset_name} -> {target_name}")
+
     return {"dockerfile_path": str(dockerfile_path)}

@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.exceptions import BuildError, DeployError, DetectionError, SecretLeakError, VulnerabilityError
 from app.models.project import Project, FailReason, ComponentKind, ProjectStatus, ProjectComponent
 from app.services.container_service import ensure_project_network, run_container
+from app.services.build_preparation import prepare_build_environment
 
 # AJOUTS POUR L'HISTORIQUE
 from app.models.deployment import DeploymentRun, PipelineStatus, DeploymentTrigger
@@ -141,12 +142,19 @@ class DeployService:
                 ProjectService.save_scan_results(db, project_id, gitleak_result=gitleak_result)
                 if gitleak_result["blocking"]:
                     raise SecretLeakError("Secret trouvé dans le dépôt")
+                
                 log("      Aucun secret détecté.")
 
                 log("[3/6] Détection du type de projet et génération du Dockerfile...")
                 _update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, "Détection et génération du Dockerfile")
                 
                 detect_result = detect_project_type(destination_path)
+                
+                prepare_build_environment(
+                    project_path=destination_path,
+                    project_type=detect_result,
+                    env_vars_input=payload.envs_var # Vient de ton schema CloneSchema
+                )
                 generate_dockerfile(detect_result, destination_path)
                 log(f"      Projet détecté et Dockerfile généré.")
 
@@ -471,6 +479,13 @@ class DeployService:
                     try:
                         detect_result = detect_project_type(destination_path)
                         generate_dockerfile(detect_result, destination_path)
+                        
+                        # Préparation du .env et .dockerignore pour ce composant <---
+                        prepare_build_environment(
+                            project_path=destination_path,
+                            project_type=detect_result,
+                            env_vars_input=comp_payload.get("envs_var") # Variables spécifiques au composant
+                        )
                         log(f"         Projet détecté et Dockerfile généré.")
                     except Exception as e:
                         log(f"         Erreur détection: {e}")

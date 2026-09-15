@@ -120,28 +120,71 @@
                                     </div>
                                 </div>
 
-                                <!-- Variables d'environnement avec Scroll -->
+                                <!-- Variables d'environnement avec Toggle Manual/File -->
                                 <div class="mt-lg pt-lg border-t border-outline-variant">
                                     <div class="flex items-center justify-between mb-md">
                                         <h4 class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Variables d'environnement</h4>
-                                        <button type="button" class="text-label-md font-label-md text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors add-env-var-btn">
-                                            <span class="material-symbols-outlined text-[16px]">add</span> Ajouter
-                                        </button>
-                                    </div>
-                                    <div class="max-h-64 overflow-y-auto pr-2 space-y-sm env-vars-list">
-                                        <div class="flex items-center gap-sm env-var-row">
-                                            <input class="env-key flex-1 h-10 border border-outline-variant rounded px-md font-mono-code text-mono-code bg-surface-container-low text-on-surface focus:outline-none focus:border-on-surface transition-colors" placeholder="CLÉ" type="text" value="DATABASE_URL"/>
-                                            <span class="text-on-surface-variant font-mono-code">=</span>
-                                            <div class="flex-1 relative">
-                                                <input class="env-value w-full h-10 border border-outline-variant rounded px-md pr-10 font-mono-code text-mono-code bg-transparent text-on-surface focus:outline-none focus:border-on-surface transition-colors" placeholder="VALEUR" type="password" value="postgres://user:pass@database:5432/db"/>
-                                                <button type="button" class="absolute right-2 top-2 text-primary hover:text-primary-container transition-colors toggle-visibility-btn" title="Afficher/Masquer">
-                                                    <span class="material-symbols-outlined text-[18px]">visibility_off</span>
-                                                </button>
-                                            </div>
-                                            <button type="button" class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-on-surface-variant hover:text-error transition-colors border border-transparent hover:border-outline-variant rounded remove-env-var-btn">
-                                                <span class="material-symbols-outlined text-[18px]">close</span>
+                                        <div class="flex items-center gap-sm">
+                                            <button type="button" class="env-mode-toggle text-label-md font-label-md text-primary flex items-center gap-1 transition-colors" data-mode="manual">
+                                                <span class="material-symbols-outlined text-[16px]">edit</span> Manuel
+                                            </button>
+                                            <span class="text-on-surface-variant">|</span>
+                                            <button type="button" class="env-mode-toggle text-label-md font-label-md text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" data-mode="file">
+                                                <span class="material-symbols-outlined text-[16px]">upload_file</span> Fichier .env
                                             </button>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Mode Manuel (par défaut) -->
+                                    <div class="env-manual-mode">
+                                        <div class="flex items-center justify-between mb-md">
+                                            <span class="font-body-sm text-body-sm text-on-surface-variant">Saisie manuelle</span>
+                                            <button type="button" class="text-label-md font-label-md text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors add-env-var-btn">
+                                                <span class="material-symbols-outlined text-[16px]">add</span> Ajouter
+                                            </button>
+                                        </div>
+                                        <div class="max-h-64 overflow-y-auto pr-2 space-y-sm env-vars-list">
+                                            <div class="flex items-center gap-sm env-var-row">
+                                                <input class="env-key flex-1 h-10 border border-outline-variant rounded px-md font-mono-code text-mono-code bg-surface-container-low text-on-surface focus:outline-none focus:border-on-surface transition-colors" placeholder="CLÉ" type="text" value="DATABASE_URL"/>
+                                                <span class="text-on-surface-variant font-mono-code">=</span>
+                                                <div class="flex-1 relative">
+                                                    <input class="env-value w-full h-10 border border-outline-variant rounded px-md pr-10 font-mono-code text-mono-code bg-transparent text-on-surface focus:outline-none focus:border-on-surface transition-colors" placeholder="VALEUR" type="password" value="postgres://user:pass@database:5432/db"/>
+                                                    <button type="button" class="absolute right-2 top-2 text-primary hover:text-primary-container transition-colors toggle-visibility-btn" title="Afficher/Masquer">
+                                                        <span class="material-symbols-outlined text-[18px]">visibility_off</span>
+                                                    </button>
+                                                </div>
+                                                <button type="button" class="w-10 h-10 flex-shrink-0 flex items-center justify-center text-on-surface-variant hover:text-error transition-colors border border-transparent hover:border-outline-variant rounded remove-env-var-btn">
+                                                    <span class="material-symbols-outlined text-[18px]">close</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Mode Fichier (caché par défaut) -->
+                                    <div class="env-file-mode hidden">
+                                        <div class="border-2 border-dashed border-outline-variant rounded-lg p-lg text-center hover:border-primary transition-colors bg-surface-container-lowest">
+                                           <input type="file" 
+                                                class="env-file-input hidden" 
+                                                id="env-file-upload"/>
+                                            <label for="env-file-upload" 
+                                                   class="cursor-pointer flex flex-col items-center gap-sm">
+                                                <span class="material-symbols-outlined text-[32px] text-on-surface-variant">upload_file</span>
+                                                <span class="font-label-md text-label-md text-on-surface">Cliquez pour uploader un fichier .env</span>
+                                                <span class="font-body-sm text-body-sm text-on-surface-variant">ou glissez-déposez le fichier ici</span>
+                                            </label>
+                                            <div class="env-file-info mt-md hidden">
+                                                <div class="flex items-center justify-center gap-sm text-primary">
+                                                    <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                                    <span class="font-label-md text-label-md env-filename-display"></span>
+                                                </div>
+                                                <button type="button" class="mt-sm text-error hover:text-error-container font-body-sm text-body-sm env-file-remove">
+                                                    Supprimer le fichier
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p class="font-body-sm text-body-sm text-on-surface-variant mt-sm">
+                                            Le fichier sera analysé automatiquement. Format attendu : <code class="bg-surface-container-low px-xs rounded">CLÉ=VALEUR</code> par ligne.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

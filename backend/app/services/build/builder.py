@@ -1,3 +1,4 @@
+#app.services.build.builder
 """
 Module de build d'images Docker.
 Gère la compilation des images à partir des Dockerfiles.
@@ -93,8 +94,34 @@ def build_docker_image(project_path: str,
                 logger.debug(str(chunk).strip())
                 
     except docker.errors.BuildError as e:
-        logger.exception(f"Échec du build Docker pour {image_tag}")
-        raise ValueError(f"Failed to build Docker image: {e}")
+        # IMPORTANT : client.images.build() (API haut niveau) itère en interne
+        # sur le stream brut AVANT de retourner quoi que ce soit. Dès qu'il
+        # rencontre un chunk contenant 'error', il lève BuildError directement
+        # à l'intérieur de l'appel ci-dessus : le for chunk in logs_generator
+        # n'est donc JAMAIS exécuté dans ce cas, et son parsing détaillé ne
+        # sert à rien pour diagnostiquer un échec.
+        #
+        # Heureusement, le SDK conserve tout l'historique des chunks émis
+        # avant l'échec (via itertools.tee) et l'attache à l'exception dans
+        # l'attribut e.build_log. On l'exploite ici pour remonter les vraies
+        # lignes d'erreur (ex: la sortie complète de "npm ERR! ...") au lieu
+        # du message générique "returned a non-zero code: 1".
+        detailed_lines = []
+        try:
+            for chunk in e.build_log:
+                if isinstance(chunk, dict) and 'stream' in chunk:
+                    line = chunk['stream'].strip()
+                    if line:
+                        detailed_lines.append(line)
+        except Exception:
+            pass  # e.build_log peut être partiellement consommé selon le contexte
+
+        full_log = "\n".join(detailed_lines[-50:])  # les 50 dernières lignes suffisent en général
+        logger.error(f"Échec du build Docker pour {image_tag}")
+        logger.error(f"Détail complet du build avant échec :\n{full_log}")
+        logger.error(f"Message d'erreur final : {e}")
+
+        raise ValueError(f"Failed to build Docker image: {e}\n\nLogs détaillés :\n{full_log}")
     except FileNotFoundError:
         # On remonte l'erreur telle quelle, elle est déjà loggée
         raise

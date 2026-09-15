@@ -12,7 +12,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 COPY package*.json ./
 
 #Installation reproductible et rapide
-RUN npm ci
+RUN npm install
 
 #Copie du code source
 COPY . .
@@ -27,14 +27,7 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 #Configuration Nginx pour SPA (Single Page Application)
-RUN echo 'server { 
-    listen 80; 
-    location / { 
-        root /usr/share/nginx/html; 
-        index index.html; 
-        try_files $uri $uri/ /index.html; 
-    } 
-}' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf.template /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

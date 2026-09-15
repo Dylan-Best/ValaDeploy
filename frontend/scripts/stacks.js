@@ -167,6 +167,7 @@ async function toggleStackDetail(projectId) {
     renderComponents(projectId, componentDetailCache[projectId], stackSlug);
 }
 
+
 function renderComponents(projectId, detail, stackSlug) {
     const container = document.getElementById(`components-${projectId}`);
     if (!container) return;
@@ -179,12 +180,17 @@ function renderComponents(projectId, detail, stackSlug) {
 
     const rows = components.map(c => {
         const statusConfig = getStatusConfig(c.status);
+        
+        // On garde kindLabel uniquement pour la logique interne (icônes, couleurs)
         const kindLabel = (c.kind || '').replace('ComponentKind.', '').toLowerCase();
         const iconStyle = getComponentIconStyle(kindLabel);
+        
+        // On utilise le vrai slug du composant s'il existe
         const componentSlug = c.slug || `${stackSlug}-${kindLabel}`;
+        
         const isFailed = c.status === 'failed';
-        const componentId = c.id; // L'ID unique du composant en base
-        const projectSlug = stackSlug; // Le slug du projet parent (stack) pour construire l'URL de détail      
+        const componentId = c.id;
+        const projectSlug = stackSlug;
 
         return `
             <div class="component-row group flex items-center justify-between bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-sm">
@@ -192,8 +198,13 @@ function renderComponents(projectId, detail, stackSlug) {
                     <div class="component-icon-box ${iconStyle.bg} ${iconStyle.color}">
                         <span class="material-symbols-outlined text-[18px]">${getComponentIcon(kindLabel)}</span>
                     </div>
-                    <span class="font-mono-code text-mono-code truncate">${escapeHtml(c.name)}</span>
-                    <span class="component-kind-pill">${escapeHtml(kindLabel)}</span>
+                    <span class="font-mono-code text-mono-code truncate" title="${escapeHtml(componentSlug)}">
+                        ${escapeHtml(c.name)}
+                    </span>
+                    <!-- Affichage du vrai slug du composant au lieu du label générique (back, front, database) -->
+                    <span class="component-kind-pill font-mono-code text-xs text-secondary" title="Slug: ${escapeHtml(componentSlug)}">
+                        ${escapeHtml(c.slug || kindLabel)}
+                    </span>
                 </div>
                 <div class="flex items-center gap-md shrink-0">
                     ${c.error_message ? `<span class="text-body-sm text-error truncate max-w-[220px]" title="${escapeHtml(c.error_message)}">${escapeHtml(c.error_message)}</span>` : ''}
