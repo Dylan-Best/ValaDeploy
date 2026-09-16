@@ -511,7 +511,7 @@ class DeployService:
                         back_comp = next((c for c in components if c["kind"] == ComponentKind.BACK), None)
                         if back_comp:
                             back_container_name = f"{slug}-{back_comp['name']}-1"
-                            back_url = f"http://{back_container_name}.localhost/api/v1" # conventino laravel
+                            back_url = f"http://{back_container_name}.localhost:8080/api/v1" # conventino laravel
                             build_args["VITE_API_URL"] = back_url
                             log(f"  [INFO] Injection de VITE_API_URL={back_url} pour le build frontend")
 
