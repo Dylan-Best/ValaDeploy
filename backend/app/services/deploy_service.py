@@ -510,8 +510,8 @@ class DeployService:
                     if comp_payload["kind"] == ComponentKind.FRONT:
                         back_comp = next((c for c in components if c["kind"] == ComponentKind.BACK), None)
                         if back_comp:
-                            back_container_name = f"{slug}-{back_comp['name']}"
-                            back_url = f"http://{back_container_name}.localhost"
+                            back_container_name = f"{slug}-{back_comp['name']}-1"
+                            back_url = f"http://{back_container_name}.localhost/api/v1" # conventino laravel
                             build_args["VITE_API_URL"] = back_url
                             log(f"  [INFO] Injection de VITE_API_URL={back_url} pour le build frontend")
 
@@ -586,11 +586,22 @@ class DeployService:
                     plain_envs = {}
                     if comp_payload["kind"] == ComponentKind.BACK and db_component is not None:
                         db_container_name = f"{slug}-{db_component.name}"
-                        plain_envs["DATABASE_URL"] = (
-                            f"postgres://{db_component.db_user}:{db_component.db_password}"
+                        #plain_envs["DATABASE_URL"] = (
+                        #    f"postgres://{db_component.db_user}:{db_component.db_password}"
+                        #    f"@{db_container_name}:5432/{db_component.db_name}"
+                        #)
+                        plain_envs["DB_URL"] = (
+                            f"pgsql://{db_component.db_user}:{db_component.db_password}"
                             f"@{db_container_name}:5432/{db_component.db_name}"
                         )
                         log(f"  [INFO] Injection auto de DATABASE_URL vers {db_container_name}")
+                        
+                            # --- Ajout : FRONTEND_URL pour le CORS du back ---
+                        front_comp = next((c for c in components if c["kind"] == ComponentKind.FRONT), None)
+                        if front_comp:
+                            front_container_name = f"{slug}-{front_comp['name']}-1"
+                            plain_envs["FRONTEND_URL"] = f"http://{front_container_name}.localhost:8080"
+                            log(f"  [INFO] Injection auto de FRONTEND_URL={plain_envs['FRONTEND_URL']}")
 
                     log(f"  [DEPLOY] Démarrage du conteneur (port: {comp_payload['port']}, expose: {comp_payload.get('expose_publicly', False)})...")
                     _update_pipeline_run(db, history_run_id, PipelineStatus.DEPLOYING, f"Déploiement de {container_name}")

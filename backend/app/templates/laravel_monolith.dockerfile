@@ -39,10 +39,7 @@ COPY . .
 COPY --from=frontend_builder /app/public/build /var/www/html/public/build
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 RUN printf 'server {\n    listen 8000;\n    root /var/www/html/public;\n    index index.php;\n    location / {\n        try_files $uri $uri/ /index.php?$query_string;\n    }\n    location ~ \\.php$ {\n        fastcgi_pass 127.0.0.1:9000;\n        fastcgi_index index.php;\n        include fastcgi_params;\n        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\n    }\n}\n' > /etc/nginx/http.d/default.conf
 
