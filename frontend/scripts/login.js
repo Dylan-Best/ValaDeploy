@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Login error:', error);
       
       // Utilise ValaToast pour la cohérence UX (au lieu de alert)
-      const errorMsg = error.message || "Échec de la connexion. Vérifiez vos identifiants.";
+      const errorMsg = error.message || "Failed to log in. Please check your credentials.";
       
       // Vérifie si ValaToast est disponible
       if (typeof ValaToast !== 'undefined' && ValaToast.show) {

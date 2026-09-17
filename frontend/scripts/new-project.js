@@ -125,10 +125,10 @@ function collectEnvVars() {
 
 // --- Libellés lisibles pour chaque statut backend ---
 const STATUS_LABELS = {
-    building: 'Build en cours...',
-    running: 'Déploiement réussi !',
-    stopped: 'Projet arrêté',
-    failed: 'Échec du déploiement',
+    building: 'Build running...',
+    running: 'DDeployment successful!',
+    stopped: 'Project stopped',
+    failed: 'Deployment failed',
 };
 
 function updateSubmitButton(submitBtn, status) {
@@ -145,7 +145,7 @@ async function pollDeployStatus(projectId, submitBtn, { intervalMs = 2000, timeo
 
     while (true) {
         if (Date.now() - start > timeoutMs) {
-            throw new Error('Le déploiement prend trop de temps. Vérifiez le statut du projet plus tard.');
+            throw new Error('The deployment is taking too long. Check the project status later.');
         }
 
         const status = await getDeployStatus(projectId);
@@ -155,7 +155,7 @@ async function pollDeployStatus(projectId, submitBtn, { intervalMs = 2000, timeo
             return status;
         }
         if (status.status === 'failed') {
-            throw new Error(status.error_message || 'Le déploiement a échoué.');
+            throw new Error(status.error_message || 'The deployment failed.');
         }
 
         // "building" (ou autre état intermédiaire) -> on repoll
@@ -182,11 +182,11 @@ function setupFormSubmit() {
 
         // 2. Validation basique
         if (!projectName) {
-            ValaToast.show({ type: 'warning', title: 'Champ requis', message: 'Le nom du projet est obligatoire.' });
+            ValaToast.show({ type: 'warning', title: 'Field required', message: 'The project name is required.' });
             return;
         }
         if (!gitUrl) {
-            ValaToast.show({ type: 'warning', title: 'Champ requis', message: 'L\'URL du dépôt Git est requise.' });
+            ValaToast.show({ type: 'warning', title: 'Field required', message: 'The Git repository URL is required.' });
             return;
         }
 
@@ -227,11 +227,11 @@ function setupFormSubmit() {
             console.error('Erreur lors du déploiement:', error);
 
             // Afficher une erreur plus parlante
-            const errorMessage = error.message || 'Une erreur inconnue est survenue lors du déploiement.';
+            const errorMessage = error.message || 'An unknown error occurred during deployment.';
             if (typeof ValaToast !== 'undefined') {
                 ValaToast.show({
                     type: 'error',
-                    title: 'Échec du déploiement',
+                    title: 'Deployment Failed',
                     message: errorMessage,
                     duration: 8000 // Plus long pour une erreur
                 });

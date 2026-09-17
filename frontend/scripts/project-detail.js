@@ -332,7 +332,7 @@ function renderMetricsUnavailable() {
 function renderMetricsError() {
     const statusText = document.getElementById('metrics-status');
     if (statusText) {
-        statusText.textContent = ' Erreur de chargement des métriques';
+        statusText.textContent = ' Error loading metrics';
         statusText.classList.add('text-error');
     }
 }
@@ -350,7 +350,7 @@ function loadEnvVars(slug) {
         })
         .catch(err => {
             console.error('Erreur chargement env vars:', err);
-            container.innerHTML = '<div class="text-error text-body-sm">⚠ Impossible de charger les variables</div>';
+            container.innerHTML = '<div class="text-error text-body-sm">⚠ Impossible to load environment variables.</div>';
         });
 }
 
@@ -359,7 +359,7 @@ function loadEnvVars(slug) {
  */
 function renderEnvVars(container, variables) {
     if (!variables || variables.length === 0) {
-        container.innerHTML = '<div class="text-secondary text-body-sm italic">Aucune variable définie</div>';
+        container.innerHTML = '<div class="text-secondary text-body-sm italic">No environment variables defined.</div>';
         return;
     }
     
@@ -392,8 +392,8 @@ function renderEnvVars(container, variables) {
             eyeBtn.addEventListener('click', () => {
                 ValaToast.show({ 
                     type: 'info', 
-                    title: 'Fonctionnalité à venir', 
-                    message: 'La révélation de valeurs sensibles sera disponible prochainement.' 
+                    title: 'This feature is coming soon', 
+                    message: 'The revelation of sensitive values will be available soon.' 
                 });
             });
             valueWrapper.appendChild(eyeBtn);

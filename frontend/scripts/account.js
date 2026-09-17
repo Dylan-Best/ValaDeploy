@@ -1,4 +1,5 @@
 //scripts/account.js
+
 document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("btn-logout-everywhere");
   const deleteBtn = document.getElementById("btn-delete-account");
@@ -7,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initUserSession(
     (user, accessToken) => {
       if (user.must_change_password) {
-        console.warn("Changement de mot de passe obligatoire.");
+        console.warn("Password change required.");
         
         // Masque les sections profil et danger zone
         const profileSection = document.querySelector("section:has(#profile-fullname)");
@@ -26,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="flex items-center gap-sm">
               <span class="material-symbols-outlined text-warning-yellow">warning</span>
               <p class="font-body-md text-body-md">
-                <strong>Sécurité :</strong> Vous devez changer votre mot de passe avant de continuer.
+                <strong>Security:</strong> You must change your password before continuing.
               </p>
             </div>
           `;
@@ -72,8 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.href = "login.html";
           })
           .catch(error => {
-            ValaToast.show({ type: 'error', title: 'Erreur', message: error.message });
-
+            ValaToast.show({ type: 'error', title: 'Error', message: error.message });
           });
       }
     });
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       if (confirmed) {
         // TODO: appel API réel de suppression de compte (pas encore implémenté côté backend)
-        console.log("Suppression de compte confirmée");
+        console.log("Account deletion requested.");
       }
     });
   }
@@ -111,29 +111,29 @@ function setupPasswordChangeForm(accessToken) {
 
       // Validations
       if (!oldPass || !newPass || !confirmPass) {
-        ValaToast.show({ type: 'error', title: 'Champs manquants', message: "Veuillez remplir tous les champs." });
+        ValaToast.show({ type: 'error', title: 'Missing Fields', message: "Please fill in all fields." });
         return;
       }
 
       if (newPass !== confirmPass) {
-        ValaToast.show({ type: 'error', title: 'Erreur', message: "Les mots de passe ne correspondent pas." });
+        ValaToast.show({ type: 'error', title: 'Error', message: "Passwords do not match." });
         return;
       }
 
       if (newPass.length < 8) {
-        ValaToast.show({ type: 'error', title: 'Mot de passe trop court', message: "Le mot de passe doit faire au moins 8 caractères." });
+        ValaToast.show({ type: 'error', title: 'Error', message: "Password must be at least 8 characters long." });
         return;
       }
 
       // Feedback visuel
       const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
-      submitBtn.textContent = "Mise à jour...";
+      submitBtn.textContent = "Updating...";
 
       try {
         await changePassword(oldPass, newPass);
         
-        ValaToast.show({ type: 'success', title: 'Succès', message: "Mot de passe modifié avec succès !" });
+        ValaToast.show({ type: 'success', title: 'Success', message: "Password changed successfully!" });
 
         
         // Recharge la page pour réafficher tout le profil
@@ -142,7 +142,7 @@ function setupPasswordChangeForm(accessToken) {
         }, 1500);
         
       } catch (error) {
-        ValaToast.show({ type: 'error', title: 'Erreur', message: error.message || "Erreur lors du changement de mot de passe" });
+        ValaToast.show({ type: 'error', title: 'Error', message: error.message || "Error occurred while changing password" });
 
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;

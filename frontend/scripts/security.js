@@ -12,10 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Erreur chargement rapports de sécurité:', error);
                 // Notification d'erreur
-                ValaToast.show({ type: 'error', title: 'Erreur de chargement', message: 'Impossible de récupérer les rapports de sécurité.' });
+                ValaToast.show({ type: 'error', title: 'Loading Error', message: 'Impossible to load security reports at the moment.' });
                 document.getElementById('security-table-body').innerHTML = `
                     <tr><td colspan="6" class="py-lg text-center text-on-surface-variant">
-                        Impossible d'afficher les données de sécurité pour le moment.
+                        Impossible to load security data at the moment.
                     </td></tr>`;
             }
         },

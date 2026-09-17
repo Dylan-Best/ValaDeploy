@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ValaToast.show({
                 type: 'info',
                 title: 'Information',
-                message: 'La fonctionnalité de re-scan manuel est à venir.',
+                message: 'This feature is coming soon.',
                 duration: 3000
             });
         });
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Erreur chargement rapport de sécurité:', error);
                 const badge = document.getElementById('scan-status-badge');
                 if (badge) {
-                    badge.textContent = 'Erreur de chargement';
+                    badge.textContent = 'Loading Error';
                     badge.className = 'flex items-center gap-2 px-4 py-2 border border-error text-error rounded-full font-label-md text-label-md bg-white';
                 }
             }

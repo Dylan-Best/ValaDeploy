@@ -26,11 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
       registerUser(username.value, email.value, password.value, confirmPassword.value)
         .then(data => {
           console.log('Registration successful:', data);
-          ValaToast.show({ type: 'success', title: 'Compte créé !', message: 'Vous allez être redirigé vers la page de connexion.' });
+          ValaToast.show({ type: 'success', title: 'Account Created', message: 'You will be redirected to the login page.' });
           setTimeout(() => { window.location.href = "login.html"; }, 1500);
         })
         .catch(error => {
-          ValaToast.show({ type: 'error', title: 'Erreur d\'inscription', message: error.message || 'Vérifiez vos informations.' });
+          ValaToast.show({ type: 'error', title: 'Registration Error', message: error.message || 'Please check your information.' });
           submitButton.disabled = false;
           submitButton.textContent = originalButtonText;
         });

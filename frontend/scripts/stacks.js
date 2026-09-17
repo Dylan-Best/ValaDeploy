@@ -3,6 +3,8 @@
 
 // Etat local : la liste des stacks chargées, pour recalculer les stats après suppression
 // sans devoir refetch le serveur.
+
+// traduire en anglais sauf les commentaires 
 let loadedStacks = [];
 
 // Cache des détails déjà chargés, pour ne pas re-fetch à chaque toggle
@@ -20,12 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderStacks(stacks);
             } catch (error) {
                 console.error('Erreur chargement stacks:', error);
-                ValaToast.show({ type: 'error', title: 'Erreur de chargement', message: 'Impossible de récupérer la liste des stacks.' });
+                ValaToast.show({ type: 'error', title: 'Error', message: 'Unable to fetch the list of stacks.' });
                 const loadingState = document.getElementById('loading-state');
                 if (loadingState) {
                     loadingState.innerHTML = `
                         <div class="py-lg text-center text-on-surface-variant">
-                            Impossible d'afficher les stacks pour le moment.
+                            Unable to display stacks at the moment.
                         </div>
                     `;
                 }
@@ -86,7 +88,7 @@ function createStackCard(stack) {
                 </div>
                 <div class="min-w-0">
                     <h3 class="stack-name font-mono-code text-[15px] font-bold text-on-surface truncate">${escapeHtml(stack.slug)}</h3>
-                    <p class="font-body-sm text-body-sm text-secondary">Créée le ${dateStr}</p>
+                    <p class="font-body-sm text-body-sm text-secondary">Created on ${dateStr}</p>
                 </div>
             </div>
             <div class="flex items-center gap-xl shrink-0">
@@ -95,10 +97,10 @@ function createStackCard(stack) {
                     <span class="font-label-sm text-label-sm">${statusConfig.label}</span>
                 </div>
                 <div class="font-body-sm text-body-sm text-secondary w-28 text-right hidden sm:block">
-                    ${stack.component_count} composant${stack.component_count > 1 ? 's' : ''}
+                    ${stack.component_count} component${stack.component_count > 1 ? 's' : ''}
                 </div>
                  <!-- Bouton Pipeline -->
-                <button class="stack-pipeline-btn text-secondary hover:text-primary p-xs rounded hover:bg-primary-container/30 transition-colors" title="Voir le pipeline" aria-label="Pipeline de ${escapeHtml(stack.slug)}">
+                <button class="stack-pipeline-btn text-secondary hover:text-primary p-xs rounded hover:bg-primary-container/30 transition-colors" title="View pipeline" aria-label="Pipeline of ${escapeHtml(stack.slug)}">
                     <span class="material-symbols-outlined text-[20px]">account_tree</span>
                 </button>
                 <button class="stack-delete-btn text-secondary hover:text-error p-xs rounded hover:bg-error-container/30" title="Supprimer la stack" aria-label="Supprimer ${escapeHtml(stack.slug)}">
@@ -109,7 +111,7 @@ function createStackCard(stack) {
         <div class="stack-card-body border-t border-outline-variant/50 bg-surface-container-low" id="components-${stack.project_id}" hidden>
             <div class="py-md px-lg text-center text-secondary text-body-sm">
                 <span class="material-symbols-outlined text-[18px] animate-spin align-middle">progress_activity</span>
-                Chargement des composants...
+                Loading components...
             </div>
         </div>
     `;
@@ -154,10 +156,10 @@ async function toggleStackDetail(projectId) {
             const detail = await getStackDetail(projectId);
             componentDetailCache[projectId] = detail;
         } catch (error) {
-            ValaToast.show({ type: 'error', title: 'Erreur', message: 'Impossible de charger les détails des composants.' });
+            ValaToast.show({ type: 'error', title: 'Error', message: 'Unable to load component details.' });
             body.innerHTML = `
                 <div class="py-md px-lg text-center text-on-surface-variant text-body-sm">
-                    Impossible de charger les détails.
+                    Error loading components.
                 </div>
             `;
             return;
@@ -174,7 +176,7 @@ function renderComponents(projectId, detail, stackSlug) {
 
     const components = detail.components || [];
     if (components.length === 0) {
-        container.innerHTML = `<div class="py-md px-lg text-center text-secondary text-body-sm">Aucun composant.</div>`;
+        container.innerHTML = `<div class="py-md px-lg text-center text-secondary text-body-sm">No components available.</div>`;
         return;
     }
 
@@ -214,7 +216,7 @@ function renderComponents(projectId, detail, stackSlug) {
                     </div>
                     <a href="project-detail.html?slug=${encodeURIComponent(projectSlug)}&component_id=${componentId}"
                     class="component-view-link text-secondary hover:text-on-surface inline-flex items-center gap-xs">
-                        <span class="font-label-sm text-label-sm">Voir</span>
+                        <span class="font-label-sm text-label-sm">View</span>
                         <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </a>
                 </div>
@@ -241,10 +243,10 @@ function attachDeleteHandler(article, stack) {
         event.stopPropagation();
 
         const confirmed = await ValaModal.confirm({
-            title: "Supprimer la stack",
-            message: `Supprimer définitivement la stack "${stack.slug}" ? Cette action est irréversible et supprimera tous les conteneurs et configurations associés.`,
-            confirmLabel: "Supprimer",
-            cancelLabel: "Annuler",
+            title: "Delete Stack",
+            message: `Permanently delete the stack "${stack.slug}" ? This action is irreversible and will delete all associated containers and configurations.`,
+            confirmLabel: "Delete",
+            cancelLabel: "Cancel",
             variant: "danger"
         });
         
@@ -262,14 +264,14 @@ function attachDeleteHandler(article, stack) {
 
             updateStackStats(loadedStacks);
 
-            ValaToast.show({ type: 'success', title: 'Stack supprimée', message: `La stack "${stack.slug}" et ses conteneurs ont été supprimés.` });
+            ValaToast.show({ type: 'success', title: 'Stack deleted', message: `The stack "${stack.slug}" and its containers have been deleted.` });
 
             const emptyState = document.getElementById('empty-state');
             if (loadedStacks.length === 0 && emptyState) {
                 emptyState.style.display = '';
             }
         } catch (error) {
-            ValaToast.show({ type: 'error', title: 'Erreur de suppression', message: error.message || 'Impossible de supprimer la stack.' });
+            ValaToast.show({ type: 'error', title: 'Error deleting stack', message: error.message || 'Unable to delete the stack.' });
             btn.disabled = false;
             btn.classList.remove('opacity-50');
         }

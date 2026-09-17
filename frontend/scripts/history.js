@@ -138,7 +138,7 @@ function viewRunLogs(runId) {
     // Tu pourras plus tard ouvrir une modale ou rediriger vers une page de détail des logs.
     ValaToast.show({ 
         type: 'info', 
-        title: 'Logs du Run #' + runId, 
+        title: 'Run\'s logs #' + runId, 
         message: 'Fonctionnalité d\'affichage détaillé des logs en cours d\'intégration.' 
     });
     
@@ -152,10 +152,10 @@ function showFatalError(message) {
         container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-20 text-center">
                 <span class="material-symbols-outlined text-6xl text-error mb-md">error_outline</span>
-                <h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Erreur</h3>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Error</h3>
                 <p class="font-body-md text-body-md text-secondary max-w-md">${escapeHtml(message)}</p>
                 <a href="stacks.html" class="mt-lg inline-flex items-center gap-xs px-lg py-sm bg-primary-orange text-white rounded-DEFAULT font-label-md hover:opacity-90 transition-opacity">
-                    Retour aux projets
+                    Back to Projects
                 </a>
             </div>
         `;

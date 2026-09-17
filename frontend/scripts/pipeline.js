@@ -51,10 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelBtn.disabled = true;
             try {
                 await cancelBuild(currentProjectId);
-                ValaToast.show({ type: 'info', title: 'Annulation demandée', message: 'Le build va être annulé.' });
+                ValaToast.show({ type: 'info', title: 'Cancellation Requested', message: 'The build will be cancelled.' });
             } catch (error) {
                 console.error("Erreur lors de l'annulation :", error);
-                ValaToast.show({ type: 'error', title: 'Erreur', message: "Impossible d'annuler le build." });
+                ValaToast.show({ type: 'error', title: 'Error', message: "Impossible to cancel the build." });
                 cancelBtn.disabled = false;
             }
         });
@@ -66,13 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!currentProjectId) return;
             try {
                 const run = await retryBuild(currentProjectId);
-                ValaToast.show({ type: 'success', title: 'Build relancé', message: 'Un nouveau run a démarré.' });
+                ValaToast.show({ type: 'success', title: 'Build Retried', message: 'A new run has started.' });
                 if (run && run.id) {
                     await openRunDetails(run.id);
                 }
             } catch (error) {
                 console.error("Erreur lors du retry :", error);
-                ValaToast.show({ type: 'error', title: 'Erreur', message: 'Impossible de relancer le build.' });
+                ValaToast.show({ type: 'error', title: 'Error', message: 'Impossible to retry the build.' });
             }
         });
     }
@@ -106,7 +106,7 @@ async function loadHistoryList() {
 
         if (slugEl) {
             if (isGlobalView) {
-                slugEl.textContent = 'Tous les projets';
+                slugEl.textContent = 'All Projects';
             } else {
                 currentSlug = (history[0].project_slug) || (history[0].project && history[0].project.slug) || null;
                 slugEl.textContent = currentSlug || `#${currentProjectId}`;
@@ -163,7 +163,7 @@ async function openRunDetails(runId, projectId) {
         showDetailsView(run);
     } catch (error) {
         console.error("Erreur lors du chargement du run :", error);
-        ValaToast.show({ type: 'error', title: 'Erreur', message: 'Impossible de charger les détails de ce run.' });
+        ValaToast.show({ type: 'error', title: 'Error', message: 'Impossible to load the details of this run.' });
     }
 }
 
@@ -426,10 +426,10 @@ function renderStepsForRun(run) {
     console.log("[DEBUG] renderStepsForRun appelé avec status:", run.status);
     const status = run.status ? run.status.toLowerCase() : 'pending';
     const steps = [
-        { label: "Clone Repository", description: "Récupération du dépôt", status: getStatusForStep(status, 'cloning') },
-        { label: "Build Docker Image", description: "Génération du Dockerfile et construction", status: getStatusForStep(status, 'building') },
-        { label: "Security Scan", description: "Analyse Trivy et Gitleaks", status: getStatusForStep(status, 'scanning') },
-        { label: "Deploy to Traefik", description: "Démarrage des conteneurs", status: getStatusForStep(status, 'deploying') }
+        { label: "Clone Repository", description: "Cloning the repository", status: getStatusForStep(status, 'cloning') },
+        { label: "Build Docker Image", description: "Building the Docker image", status: getStatusForStep(status, 'building') },
+        { label: "Security Scan", description: "Scanning for security vulnerabilities", status: getStatusForStep(status, 'scanning') },
+        { label: "Deploy to Traefik", description: "Deploying to Traefik", status: getStatusForStep(status, 'deploying') }
     ];
 
     const container = document.getElementById('pipeline-steps');

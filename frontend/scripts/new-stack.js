@@ -50,10 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ValaToast.show({
                         type: 'warning',
                         title: 'Action impossible',
-                        message: 'Une stack doit contenir au moins un composant.'
+                        message: 'A stack must contain at least one component.'
                     });
                 } else {
-                    alert("Une stack doit contenir au moins un composant.");
+                    alert("A stack must contain at least one component.");
                 }
             }
         }
@@ -251,14 +251,14 @@ function addComponent(kind) {
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-lg mb-xl">
                     <div class="md:col-span-2">
-                        <label class="block font-label-md text-label-md text-on-surface mb-xs">URL du dépôt Git</label>
+                        <label class="block font-label-md text-label-md text-on-surface mb-xs">Repository URL</label>
                         <div class="flex relative">
                             <span class="absolute left-3 top-2.5 text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">link</span></span>
                             <input class="component-repo-url w-full h-10 border border-outline-variant rounded pl-10 pr-md font-body-sm text-body-sm bg-transparent text-on-surface focus:outline-none focus:border-on-surface transition-colors" placeholder="https://github.com/org/repo.git" type="url" required/>
                         </div>
                     </div>
                     <div>
-                        <label class="block font-label-md text-label-md text-on-surface mb-xs">Branche</label>
+                        <label class="block font-label-md text-label-md text-on-surface mb-xs">Branch</label>
                         <input class="component-branch w-full h-10 border border-outline-variant rounded px-md font-mono-code text-body-sm bg-transparent text-on-surface focus:outline-none focus:border-on-surface transition-colors" placeholder="main" type="text" value="main" required/>
                     </div>
                     <div>
@@ -274,14 +274,14 @@ function addComponent(kind) {
                 <!-- Variables d'environnement avec Toggle Manual/File -->
                 <div class="mt-lg pt-lg border-t border-outline-variant">
                     <div class="flex items-center justify-between mb-md">
-                        <h4 class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Variables d'environnement</h4>
+                        <h4 class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Environment Variables</h4>
                         <div class="flex items-center gap-sm">
                             <button type="button" class="env-mode-toggle text-label-md font-label-md text-primary flex items-center gap-1 transition-colors" data-mode="manual">
-                                <span class="material-symbols-outlined text-[16px]">edit</span> Manuel
+                                <span class="material-symbols-outlined text-[16px]">edit</span> Manual
                             </button>
                             <span class="text-on-surface-variant">|</span>
                             <button type="button" class="env-mode-toggle text-label-md font-label-md text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" data-mode="file">
-                                <span class="material-symbols-outlined text-[16px]">upload_file</span> Fichier .env
+                                <span class="material-symbols-outlined text-[16px]">upload_file</span> .env File
                             </button>
                         </div>
                     </div>
@@ -307,8 +307,8 @@ function addComponent(kind) {
                             <label for="${uploadId}"
                                    class="cursor-pointer flex flex-col items-center gap-sm">
                                 <span class="material-symbols-outlined text-[32px] text-on-surface-variant">upload_file</span>
-                                <span class="font-label-md text-label-md text-on-surface">Cliquez pour uploader un fichier .env</span>
-                                <span class="font-body-sm text-body-sm text-on-surface-variant">ou glissez-déposez le fichier ici</span>
+                                <span class="font-label-md text-label-md text-on-surface">Click to upload .env file</span>
+                                <span class="font-body-sm text-body-sm text-on-surface-variant">or drag and drop the file here</span>
                             </label>
                             <div class="env-file-info mt-md hidden">
                                 <div class="flex items-center justify-center gap-sm text-primary">
@@ -316,12 +316,12 @@ function addComponent(kind) {
                                     <span class="font-label-md text-label-md env-filename-display"></span>
                                 </div>
                                 <button type="button" class="mt-sm text-error hover:text-error-container font-body-sm text-body-sm env-file-remove">
-                                    Supprimer le fichier
+                                    Delete File
                                 </button>
                             </div>
                         </div>
                         <p class="font-body-sm text-body-sm text-on-surface-variant mt-sm">
-                            Le fichier sera analysé automatiquement. Format attendu : <code class="bg-surface-container-low px-xs rounded">CLÉ=VALEUR</code> par ligne.
+                            The file will be analyzed automatically. Expected format : <code class="bg-surface-container-low px-xs rounded">KEY=VALUE</code> per line.
                         </p>
                     </div>
                 </div>
@@ -354,8 +354,8 @@ function handleEnvFileUpload(input) {
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'error',
-                title: 'Format invalide',
-                message: 'Veuillez sélectionner un fichier .env valide.'
+                title: 'Invalid Format',
+                message: 'Please select a valid .env file.'
             });
         }
         input.value = '';
@@ -410,8 +410,8 @@ function handleEnvFileUpload(input) {
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'success',
-                title: 'Fichier importé',
-                message: `${variables.length} variable(s) importée(s) depuis ${file.name}`
+                title: 'File Imported',
+                message: `${variables.length} variable(s) imported from ${file.name}`
             });
         }
     };
@@ -420,8 +420,8 @@ function handleEnvFileUpload(input) {
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'error',
-                title: 'Erreur de lecture',
-                message: 'Impossible de lire le fichier .env'
+                title: 'Reading Error',
+                message: 'Unable to read the .env file'
             });
         }
         input.value = '';
@@ -530,7 +530,7 @@ async function handleStackSubmit(event) {
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Déploiement en cours...`;
+    submitBtn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Deploying...`;
 
     try {
         // Appel à la fonction API que nous venons de créer
@@ -540,8 +540,8 @@ async function handleStackSubmit(event) {
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'success',
-                title: 'Déploiement lancé',
-                message: `La stack "${slug}" est en cours de création.`,
+                title: 'Deployment Started',
+                message: `The stack "${slug}" is being created.`,
                 duration: 3000
             });
         }
@@ -556,12 +556,12 @@ async function handleStackSubmit(event) {
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'error',
-                title: 'Échec du déploiement',
-                message: error.message || 'Une erreur inconnue est survenue lors de la création de la stack.',
+                title: 'Deployment Failed',
+                message: error.message || 'An unknown error occurred while creating the stack.',
                 duration: 8000
             });
         } else {
-            alert(`Échec du déploiement : ${error.message}`);
+            alert(`Deployment Failed: ${error.message}`);
         }
     } finally {
         submitBtn.disabled = false;

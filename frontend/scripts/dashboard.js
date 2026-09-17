@@ -1,5 +1,6 @@
 // api/dashboard.js
-// Chargement des projets, pagination, filtrage et suppression
+// Loading projects, pagination, filtering and deletion
+
 
 document.addEventListener('DOMContentLoaded', () => {
     initUserSession(
@@ -11,13 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const projects = await getProjects();
                 renderProjects(projects);
             } catch (error) {
-                console.error('Erreur chargement projets:', error);
+                console.error('Error loading projects:', error);
 
                 if (typeof ValaToast !== 'undefined') {
                     ValaToast.show({
                         type: 'error',
-                        title: 'Erreur de chargement',
-                        message: error.message || 'Impossible de récupérer la liste des projets.',
+                        title: 'Error loading projects',
+                        message: error.message || 'Impossible to load projects.',
                         duration: 6000
                     });
                 }
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="5" class="py-lg text-center text-on-surface-variant">
-                                Impossible d'afficher les projets pour le moment.
+                                Impossible to display projects at the moment.
                             </td>
                         </tr>
                     `;
@@ -38,11 +39,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const stats = await getDashboardStats();
                 renderDashboardStats(stats);
             } catch (error) {
-                console.error('Erreur chargement stats dashboard:', error);
+                console.error('Error loading dashboard stats:', error);
             }
         },
         (error) => {
-            console.log('Session invalide ou expirée :', error.message);
+            console.log('Invalid or expired session :', error.message);
             window.location.href = "login.html";
         }
     );
@@ -140,7 +141,7 @@ function updatePaginationButtons(page, totalPages) {
 
 function updatePageIndicator(page, totalPages) {
     const el = document.getElementById('page-indicator');
-    if (el) el.textContent = `Page ${page} sur ${totalPages}`;
+    if (el) el.textContent = `Page ${page} of ${totalPages}`;
 }
 
 // --- Rendu du tableau ---
@@ -156,9 +157,9 @@ function renderTable(projects, isTrulyEmpty) {
                 <tr id="empty-row">
                     <td colspan="5" class="py-xl text-center text-secondary">
                         <span class="material-symbols-outlined text-4xl block mb-sm">folder_open</span>
-                        <p>Aucun projet pour le moment</p>
+                        <p>No projects at the moment</p>
                         <a href="new-project.html" class="inline-block mt-md px-lg py-sm bg-primary-container text-on-primary rounded-lg hover:opacity-90 transition-all duration-150 active:scale-[0.97]">
-                            Créer votre premier projet
+                            Create your first project
                         </a>
                     </td>
                 </tr>
@@ -168,7 +169,7 @@ function renderTable(projects, isTrulyEmpty) {
                 <tr>
                     <td colspan="5" class="py-xl text-center text-secondary">
                         <span class="material-symbols-outlined text-4xl block mb-sm">search_off</span>
-                        <p>Aucun projet ne correspond à votre recherche</p>
+                        <p>No projects match your search</p>
                     </td>
                 </tr>
             `;
@@ -252,7 +253,7 @@ function createProjectRow(project) {
                 </button>
                 <a href="project-detail.html?slug=${project.slug}"
                    class="text-on-surface hover:text-primary transition-colors inline-flex items-center gap-xs">
-                    <span class="font-label-md text-label-md">Voir</span>
+                    <span class="font-label-md text-label-md">View</span>
                     <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </a>
             </div>
@@ -272,17 +273,17 @@ function createProjectRow(project) {
 
 async function handleDeleteProject(project) {
     const confirmed = await ValaModal.confirm({
-        title: "Supprimer le projet",
-        message: `Supprimer définitivement le projet "${project.slug}" ? Cette action est irréversible et supprimera toutes les données associées.`,
-        confirmLabel: "Supprimer",
-        cancelLabel: "Annuler",
+        title: "Delete Project",
+        message: `Permanently delete the project "${project.slug}" ? This action is irreversible and will delete all associated data.`,
+        confirmLabel: "Delete",
+        cancelLabel: "Cancel",
         variant: "danger"
     });
     if (!confirmed) return;
 
     try {
         if (typeof deleteProject !== 'function') {
-            throw new Error('La suppression de projet n\'est pas encore disponible.');
+            throw new Error('Project deletion is not yet available.');
         }
 
         await deleteProject(project.id);
@@ -297,18 +298,18 @@ async function handleDeleteProject(project) {
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'success',
-                title: 'Projet supprimé',
-                message: `Le projet "${project.slug}" a été supprimé avec succès.`,
+                title: 'Project deleted',
+                message: `The project "${project.slug}" has been deleted successfully.`,
                 duration: 4000
             });
         }
     } catch (error) {
-        console.error('Erreur suppression projet:', error);
+        console.error('Error deleting project:', error);
         if (typeof ValaToast !== 'undefined') {
             ValaToast.show({
                 type: 'error',
-                title: 'Suppression impossible',
-                message: error.message || 'Une erreur est survenue lors de la suppression.',
+                title: 'Deletion impossible',
+                message: error.message || 'An error occurred while deleting the project.',
                 duration: 6000
             });
         }
