@@ -4,6 +4,23 @@ from app.services.traefik_service import build_traefik_labels
 import docker
 from app.core.security import decrypt_data
 
+
+def build_container_name(component_slug: str, replica_index: int = 1) -> str:
+    """
+    Nom de conteneur canonique pour un composant, à un index de replica donné.
+
+    Source de vérité UNIQUE : utilisée par scale_project() pour nommer les
+    conteneurs réellement créés, ET par les ComponentDeployer de stack
+    (app/services/stack_deployment/) pour construire à l'avance les hostnames
+    Traefik (VITE_API_URL, FRONTEND_URL...) avant même que le conteneur
+    n'existe. Les deux doivent impérativement rester en phase — voir le point
+    d'attention "nommage de conteneur dupliqué et fragile" du résumé de
+    session précédent. Si scale_project change un jour sa convention de
+    nommage (replicas, autre schéma), ne modifier QUE cette fonction.
+    """
+    return f"{component_slug}-{replica_index}"
+
+
 def run_container(image_name: str, slug: str, network: str, envs_var: dict = None,
                    extra_networks: list = None, volumes: dict = None,
                    expose_traefik: bool = True, plain_envs_var: dict = None, port: int = None) -> str:
@@ -23,10 +40,9 @@ def run_container(image_name: str, slug: str, network: str, envs_var: dict = Non
         pass
     except docker.errors.APIError as e:
         raise ValueError(f"Error occurred while running container: {e}")
-    
+
     if expose_traefik and port is None:
         raise ValueError(f"port est requis quand expose_traefik=True (conteneur: {slug})")
-
 
     traefik_labels = build_traefik_labels(slug, internal_port=port) if expose_traefik else {}
 
@@ -62,9 +78,10 @@ def run_container(image_name: str, slug: str, network: str, envs_var: dict = Non
 
     return container.id
 
+
 def scale_project(image_name: str, slug: str, network: str, desired_replicas: int,
                    envs_var: dict = None, extra_networks: list = None,
-                   plain_envs_var: dict = None, port: int = None,expose_traefik: bool = True) -> list:
+                   plain_envs_var: dict = None, port: int = None, expose_traefik: bool = True) -> list:
     """
     Scale the number of running containers for a project.
 
@@ -73,7 +90,7 @@ def scale_project(image_name: str, slug: str, network: str, desired_replicas: in
         slug (str): A unique identifier for the container.
         network (str): The name of the Docker network to connect the container to.
         desired_replicas (int): The desired number of replicas to run.
-        envs_var (dict, optional): A dictionary of environment variables to set in the container. 
+        envs_var (dict, optional): A dictionary of environment variables to set in the container.
                                    The values should be encrypted and will be decrypted before being passed to the container.
         extra_networks (list, optional): réseaux additionnels, transmis tel quel à run_container.
         plain_envs_var (dict, optional): variables déjà en clair, non chiffrées (ex: DATABASE_URL
@@ -109,11 +126,11 @@ def scale_project(image_name: str, slug: str, network: str, desired_replicas: in
     # Start or restart containers up to desired_replicas
     running_container_ids = []
     for i in range(1, desired_replicas + 1):
-        container_name = f"{slug}-{i}"
+        container_name = build_container_name(slug, i)
         new_container_id = run_container(
-            image_name, 
-            container_name, 
-            network, envs_var, 
+            image_name,
+            container_name,
+            network, envs_var,
             extra_networks,
             plain_envs_var=plain_envs_var,
             port=port,
@@ -121,6 +138,7 @@ def scale_project(image_name: str, slug: str, network: str, desired_replicas: in
         )
         running_container_ids.append(new_container_id)
     return running_container_ids
+
 
 def ensure_project_network(slug: str) -> str:
     """
@@ -145,10 +163,11 @@ def ensure_project_network(slug: str) -> str:
         client.networks.create(network_name, driver="bridge")
     return network_name
 
+
 def manage_container_state(container_id: str, action: str, project_slug: str) -> str:
     """
     Démarre, arrête ou redémarre un conteneur par son ID.
-    Résout le problème 'network not found' en s'assurant que le réseau 
+    Résout le problème 'network not found' en s'assurant que le réseau
     du projet existe avant toute tentative de démarrage.
     """
     try:

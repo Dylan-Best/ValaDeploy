@@ -1,10 +1,11 @@
+#app/services/deploy_service.py
 import logging
 import os
 import traceback
 import uuid
 from app.services.cleanup_service import cleanup_project_resources
 
-from sqlalchemy.orm import Session # CORRECTION: était "from requests import Session"
+from sqlalchemy.orm import Session  # CORRECTION: était "from requests import Session"
 
 from app.db.database import Session_local
 from app.schemas.deploy import CloneSchema
@@ -22,6 +23,15 @@ from app.services.build_preparation import prepare_build_environment
 # AJOUTS POUR L'HISTORIQUE
 from app.models.deployment import DeploymentRun, PipelineStatus, DeploymentTrigger
 from datetime import datetime, timezone
+
+# Extrait dans son propre module pour être partagé avec les ComponentDeployer
+# de app/services/stack_deployment/ (voir ce module pour le détail).
+from app.services.deployment_run_tracker import update_pipeline_run
+
+# Pattern stratégie pour le déploiement de stack : un ComponentDeployer par
+# ComponentKind (front/back/database), voir app/services/stack_deployment/.
+from app.services.stack_deployment.context import StackDeploymentContext
+from app.services.stack_deployment.factory import get_component_deployer
 
 
 def _make_logger(f):
@@ -44,21 +54,6 @@ def _make_logger(f):
             # on ne veut jamais qu'un problème de logging fasse planter le pipeline.
             pass
     return log
-
-
-def _update_pipeline_run(db: Session, run_id: int, status: PipelineStatus, log_message: str):
-    """Met à jour le statut et ajoute un message aux logs du run en cours."""
-    run = db.query(DeploymentRun).filter(DeploymentRun.id == run_id).first()
-    if run:
-        run.status = status
-        timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
-        run.logs = (run.logs or "") + f"[{timestamp}] {status.value.upper()}: {log_message}\n"
-        
-        if status in [PipelineStatus.SUCCESS, PipelineStatus.FAILED]:
-            run.finished_at = datetime.now(timezone.utc)
-            
-        db.commit()
-        db.refresh(run)
 
 
 class DeployService:
@@ -103,7 +98,7 @@ class DeployService:
                     ProjectService.mark_failed(db, project_id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER)
                     db.commit()
 
-            history_run_id = None # Initialisé pour les blocs except
+            history_run_id = None  # Initialisé pour les blocs except
 
             try:
                 # ---> CRÉATION DE L'HISTORIQUE <---
@@ -121,16 +116,16 @@ class DeployService:
                 history_run_id = new_run.id
 
                 log(f"[1/6] Clonage du dépôt: {payload.repo_url} (branche: {payload.branch})")
-                _update_pipeline_run(db, history_run_id, PipelineStatus.CLONING, f"Clonage de {payload.repo_url}")
-                
+                update_pipeline_run(db, history_run_id, PipelineStatus.CLONING, f"Clonage de {payload.repo_url}")
+
                 clone_result = clone_repository(payload.repo_url, destination_path, payload.branch)
-                
+
                 # Mise à jour du commit hash dans l'historique
                 run_record = db.query(DeploymentRun).get(history_run_id)
                 if run_record:
                     run_record.commit_hash = clone_result['commit_hash']
                     db.commit()
-                    
+
                 log(f"    Clone réussi. Commit: {clone_result['commit_hash']}")
 
                 if is_cancelled():
@@ -142,18 +137,18 @@ class DeployService:
                 ProjectService.save_scan_results(db, project_id, gitleak_result=gitleak_result)
                 if gitleak_result["blocking"]:
                     raise SecretLeakError("Secret trouvé dans le dépôt")
-                
+
                 log("      Aucun secret détecté.")
 
                 log("[3/6] Détection du type de projet et génération du Dockerfile...")
-                _update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, "Détection et génération du Dockerfile")
-                
+                update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, "Détection et génération du Dockerfile")
+
                 detect_result = detect_project_type(destination_path)
-                
+
                 prepare_build_environment(
                     project_path=destination_path,
                     project_type=detect_result,
-                    env_vars_input=payload.envs_var # Vient de ton schema CloneSchema
+                    env_vars_input=payload.envs_var  # Vient de ton schema CloneSchema
                 )
                 generate_dockerfile(detect_result, destination_path)
                 log(f"      Projet détecté et Dockerfile généré.")
@@ -163,8 +158,8 @@ class DeployService:
                     return
 
                 log(f"[4/6] Build de l'image Docker '{payload.slug}'...")
-                _update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, f"Build de l'image {payload.slug}")
-                
+                update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, f"Build de l'image {payload.slug}")
+
                 build_result = build_docker_image(destination_path, payload.slug, clone_result["commit_hash"])
                 log("      Build de l'image terminé avec succès.")
 
@@ -173,8 +168,8 @@ class DeployService:
                     return
 
                 log("[5/6] Analyse des vulnérabilités (Trivy)...")
-                _update_pipeline_run(db, history_run_id, PipelineStatus.SCANNING, "Scan de sécurité (Trivy)")
-                
+                update_pipeline_run(db, history_run_id, PipelineStatus.SCANNING, "Scan de sécurité (Trivy)")
+
                 trivy_result = scan_image(build_result)
                 ProjectService.save_scan_results(db, project_id, trivy_result=trivy_result)
                 if trivy_result["blocking"]:
@@ -190,8 +185,8 @@ class DeployService:
                     return
 
                 log(f"[6/6] Déploiement des conteneurs (réplicas: {payload.replica})...")
-                _update_pipeline_run(db, history_run_id, PipelineStatus.DEPLOYING, f"Démarrage des {payload.replica} conteneur(s)")
-                
+                update_pipeline_run(db, history_run_id, PipelineStatus.DEPLOYING, f"Démarrage des {payload.replica} conteneur(s)")
+
                 container_ids = scale_project(
                     build_result,
                     payload.slug, settings.APP_NETWORK,
@@ -206,7 +201,7 @@ class DeployService:
                     log("[ANNULÉ] Arrêt demandé pendant le déploiement des conteneurs. Nettoyage...")
                     cleanup_project_resources(payload.slug, container_ids)
                     if not is_superseded():
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé par l'utilisateur")
+                        update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé par l'utilisateur")
                         ProjectService.mark_failed(db, project_id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER)
                         db.commit()
                     return
@@ -219,8 +214,8 @@ class DeployService:
                 log("[INFO] DÉPLOIEMENT TERMINÉ AVEC SUCCÈS")
                 log("[INFO] ==================================================")
 
-                _update_pipeline_run(db, history_run_id, PipelineStatus.SUCCESS, "Déploiement terminé avec succès")
-                
+                update_pipeline_run(db, history_run_id, PipelineStatus.SUCCESS, "Déploiement terminé avec succès")
+
                 ProjectService.finalize_success(
                     db, project_id,
                     container_ids=container_ids,
@@ -231,44 +226,44 @@ class DeployService:
             except VulnerabilityError as e:
                 log(f"[ERREUR] {e}")
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Vulnérabilité: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Vulnérabilité: {e}")
                     ProjectService.mark_failed(db, project_id, str(e), fail_reason=FailReason.VULNERABILITY, vulnerabilities=e.vulnerabilities)
                     db.commit()
             except SecretLeakError as e:
                 log(f"[ERREUR] {e}")
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Secret leak: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Secret leak: {e}")
                     ProjectService.mark_failed(db, project_id, str(e), fail_reason=FailReason.SECRET_LEAK)
                     db.commit()
             except DetectionError as e:
                 log(f"[ERREUR] {e}")
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur détection: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur détection: {e}")
                     ProjectService.mark_failed(db, project_id, str(e), fail_reason=FailReason.DETECTION_ERROR)
                     db.commit()
             except BuildError as e:
                 log(f"[ERREUR] {e}")
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur build: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur build: {e}")
                     ProjectService.mark_failed(db, project_id, str(e), fail_reason=FailReason.BUILD_ERROR)
                     db.commit()
             except DeployError as e:
                 log(f"[ERREUR] {e}")
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur déploiement: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur déploiement: {e}")
                     ProjectService.mark_failed(db, project_id, str(e), fail_reason=FailReason.DEPLOY_ERROR)
                     db.commit()
             except ValueError as e:
                 log(f"[ERREUR] {e}")
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur valeur: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur valeur: {e}")
                     ProjectService.mark_failed(db, project_id, str(e), fail_reason=FailReason.CLONE_ERROR)
                     db.commit()
             except Exception as e:
                 log(f"[ERREUR CRITIQUE] Erreur inattendue: {e}")
                 log(traceback.format_exc())
                 if not is_superseded():
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur critique: {e}")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur critique: {e}")
                     ProjectService.mark_failed(db, project_id, f"Erreur inattendue: {e}", fail_reason=FailReason.OTHER)
                     db.commit()
             finally:
@@ -279,6 +274,11 @@ class DeployService:
         """
         Déploie une stack multi-composants (front/back/database) pour un Project.
         Les logs sont écrits directement dans un fichier pour être streamés via WebSocket.
+
+        Cette méthode est un ORCHESTRATEUR : elle gère le cycle de vie du run
+        (historique, annulation, agrégation du statut global) et délègue le
+        détail du déploiement de chaque composant à un ComponentDeployer
+        (voir app/services/stack_deployment/), un par ComponentKind.
         """
         log_dir = "app/logs"
         os.makedirs(log_dir, exist_ok=True)
@@ -292,24 +292,17 @@ class DeployService:
             log(f"[INFO] Composants à déployer: {len(components)}")
             log(f"[INFO] ==================================================\n")
 
-            # ⚠️ TEMPORAIRE — usage TEST uniquement, à repasser à False avant toute
-            # utilisation réelle. Permet de voir la stack tourner malgré des vulnérabilités
-            # critiques détectées, pour valider la communication réseau inter-conteneurs.
-            SKIP_SECURITY_GATE_FOR_TEST = True
-
             db = Session_local()
             project_network = ensure_project_network(slug)
 
             # Le composant DATABASE doit être traité avant BACK, pour que ses credentials
-            # (générés plus bas) soient déjà en base au moment où on construit DATABASE_URL
-            # pour le composant BACK. On trie sans modifier l'ordre relatif du reste.
+            # (générés par DatabaseComponentDeployer) soient déjà en base au moment où
+            # BackComponentDeployer construit DB_URL. On trie sans modifier l'ordre relatif
+            # du reste.
             components = sorted(
                 components,
                 key=lambda c: 0 if c["kind"] == ComponentKind.DATABASE else 1
             )
-
-            # Référence vers le composant DATABASE de la stack une fois traité
-            db_component = None
 
             # Helper d'annulation : STOPPED en BDD OU un nouveau run a été démarré (retry concurrent).
             # db.expire_all() est indispensable, sinon SQLAlchemy peut resservir un statut en cache
@@ -334,7 +327,7 @@ class DeployService:
                 p = db.query(Project).filter(Project.id == project_id).first()
                 return bool(p and run_id and p.pipeline_run_id != run_id)
 
-            history_run_id = None # Initialisé pour les blocs except
+            history_run_id = None  # Initialisé pour les blocs except
 
             try:
                 # ---> CRÉATION DE L'HISTORIQUE <---
@@ -351,6 +344,16 @@ class DeployService:
                 db.refresh(new_run)
                 history_run_id = new_run.id
 
+                ctx = StackDeploymentContext(
+                    db=db,
+                    slug=slug,
+                    project_network=project_network,
+                    components=components,
+                    log=log,
+                    history_run_id=history_run_id,
+                    is_cancelled=is_cancelled,
+                )
+
                 total_components = len(components)
                 for idx, comp_payload in enumerate(components, 1):
                     component = ProjectService.get_component_by_id(db, comp_payload["component_id"])
@@ -358,277 +361,32 @@ class DeployService:
                         log(f"[WARN] Composant ID {comp_payload['component_id']} introuvable, skip.")
                         continue
 
-                    #  CHECKPOINT D'ANNULATION ROBUSTE (Requête fraîche en BDD)
+                    # CHECKPOINT D'ANNULATION ROBUSTE (requête fraîche en BDD), avant de
+                    # démarrer le traitement de ce composant.
                     if is_cancelled():
                         log(f"\n[INFO]  BUILD ANNULÉ DÉTECTÉ EN BDD. Arrêt immédiat du traitement.")
-
-                        # On marque ce composant comme annulé
                         ProjectService.mark_component_failed(
                             db, component.id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER
                         )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé par l'utilisateur")
+                        update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé par l'utilisateur")
                         db.commit()
+                        break  # on ne traite PAS les composants suivants
 
-                        #  ON SORT DE LA BOUCLE, on ne traite PAS les composants suivants
+                    ctx.comp_payload = comp_payload
+                    ctx.component = component
+                    ctx.container_name = f"{slug}-{comp_payload['name']}"
+                    ctx.stop_requested = False
+
+                    log(f"[{idx}/{total_components}] Traitement du composant: {ctx.container_name} ({comp_payload['kind'].value})")
+
+                    deployer = get_component_deployer(comp_payload["kind"])
+                    deployer.deploy(ctx)
+
+                    # Un ComponentDeployer lève ce signal uniquement sur un checkpoint
+                    # d'annulation (jamais sur un échec ordinaire, qui passe au composant
+                    # suivant) : dans ce cas on arrête toute la stack, comme avant.
+                    if ctx.stop_requested:
                         break
-
-                    container_name = f"{slug}-{comp_payload['name']}"
-                    log(f"[{idx}/{total_components}] Traitement du composant: {container_name} ({comp_payload['kind'].value})")
-
-                    # ---------- CAS DATABASE : pas de clone, pas de scan, juste run ----------
-                    if comp_payload["kind"] == ComponentKind.DATABASE:
-                        try:
-                            volume_binding = None
-                            if comp_payload.get("volume_name"):
-                                volume_binding = {
-                                    comp_payload["volume_name"]: {"bind": "/var/lib/postgresql/data", "mode": "rw"}
-                                }
-
-                            log(f"  [DB] Génération des credentials PostgreSQL...")
-                            ProjectService.generate_db_credentials(db, component.id, slug)
-                            db.refresh(component)
-                            log(f"  [DB] Credentials générés: user={component.db_user}, db={component.db_name}")
-
-                            log(f"  [DB] Démarrage du conteneur avec l'image {comp_payload['db_image']}...")
-                            container_id = run_container(
-                                image_name=comp_payload["db_image"],
-                                slug=container_name,
-                                network=project_network,
-                                envs_var=comp_payload.get("envs_var"),
-                                plain_envs_var={
-                                    "POSTGRES_USER": component.db_user,
-                                    "POSTGRES_PASSWORD": component.db_password,
-                                    "POSTGRES_DB": component.db_name,
-                                },
-                                extra_networks=None,
-                                volumes=volume_binding,
-                                expose_traefik=False,
-                            )
-                            ProjectService.finalize_component_success(db, component.id, container_ids=[container_id])
-                            db_component = component
-                            log(f"  [DB]  Base de données démarrée avec succès (container_id: {container_id[:12]})\n")
-                        except Exception as e:
-                            log(f"  [DB]  Erreur démarrage database: {e}")
-                            log(traceback.format_exc())
-                            ProjectService.mark_component_failed(
-                                db, component.id, f"Erreur démarrage database: {e}", fail_reason=FailReason.DEPLOY_ERROR
-                            )
-                            _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur DB: {e}")
-                        continue
-
-                    # ---------- CAS FRONT / BACK : pipeline complet ----------
-                    destination_path = f"/tmp/ids-repo/{container_name}"
-
-                    if comp_payload.get("port") is None:
-                        log(f"  [ERROR] Port d'écoute non renseigné pour {container_name}")
-                        ProjectService.mark_component_failed(
-                            db, component.id,
-                            "Port d'écoute non renseigné pour ce composant",
-                            fail_reason=FailReason.DEPLOY_ERROR,
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Port manquant")
-                        continue
-
-                    # Étape 1: Clone
-                    log(f"  [1/5] Clonage du dépôt: {comp_payload['repo_url']} (branche: {comp_payload.get('branch', 'main')})")
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.CLONING, f"Clonage de {container_name}")
-                    try:
-                        clone_result = clone_repository(
-                            comp_payload["repo_url"], destination_path, comp_payload.get("branch", "main")
-                        )
-                        log(f"         Clone réussi. Commit: {clone_result['commit_hash']}")
-                        
-                        run_record = db.query(DeploymentRun).get(history_run_id)
-                        if run_record and not run_record.commit_hash:
-                            run_record.commit_hash = clone_result['commit_hash']
-                            db.commit()
-                    except Exception as e:
-                        log(f"         Erreur clone: {e}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, f"Erreur clone: {e}", fail_reason=FailReason.CLONE_ERROR
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur clone: {e}")
-                        continue
-
-                    # CHECKPOINT après clone (étape potentiellement longue)
-                    if is_cancelled():
-                        log(f"  [ANNULÉ] Arrêt après clone pour {container_name}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé après clone")
-                        db.commit()
-                        break
-
-                    # Étape 2: Gitleaks
-                    log(f"  [2/5] Analyse des secrets (Gitleaks)...")
-                    gitleak_result = detect_secret(destination_path)
-                    ProjectService.save_component_scan_results(db, component.id, gitleak_result=gitleak_result)
-                    if gitleak_result["blocking"]:
-                        log(f"         Secret trouvé dans le dépôt - déploiement bloqué")
-                        ProjectService.mark_component_failed(
-                            db, component.id, "Secret trouvé dans le dépôt", fail_reason=FailReason.SECRET_LEAK
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Secret leak détecté")
-                        continue
-                    log(f"         Aucun secret détecté.")
-
-                    # Étape 3: Détection + Dockerfile
-                    log(f"  [3/5] Détection du type de projet et génération du Dockerfile...")
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, f"Génération Dockerfile pour {container_name}")
-                    try:
-                        detect_result = detect_project_type(destination_path)
-                        generate_dockerfile(detect_result, destination_path)
-                        
-                        # Préparation du .env et .dockerignore pour ce composant <---
-                        prepare_build_environment(
-                            project_path=destination_path,
-                            project_type=detect_result,
-                            env_vars_input=comp_payload.get("envs_var") # Variables spécifiques au composant
-                        )
-                        log(f"         Projet détecté et Dockerfile généré.")
-                    except Exception as e:
-                        log(f"         Erreur détection: {e}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, f"Erreur détection: {e}", fail_reason=FailReason.DETECTION_ERROR
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur détection: {e}")
-                        continue
-
-                    # CHECKPOINT avant le build (étape la plus longue)
-                    if is_cancelled():
-                        log(f"  [ANNULÉ] Arrêt avant build pour {container_name}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé avant build")
-                        db.commit()
-                        break
-
-                    # Étape 4: Build
-                    build_args = {}
-                    if comp_payload["kind"] == ComponentKind.FRONT:
-                        back_comp = next((c for c in components if c["kind"] == ComponentKind.BACK), None)
-                        if back_comp:
-                            back_container_name = f"{slug}-{back_comp['name']}-1"
-                            back_url = f"http://{back_container_name}.localhost:8080/api/v1" # conventino laravel
-                            build_args["VITE_API_URL"] = back_url
-                            log(f"  [INFO] Injection de VITE_API_URL={back_url} pour le build frontend")
-
-                    log(f"  [4/5] Build de l'image Docker '{container_name}'...")
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.BUILDING, f"Build de l'image {container_name}")
-                    try:
-                        build_result = build_docker_image(
-                            destination_path,
-                            container_name,
-                            clone_result["commit_hash"],
-                            build_args=build_args if build_args else None
-                        )
-                        log(f"         Build de l'image terminé avec succès.")
-                    except Exception as e:
-                        log(f"         Erreur build: {e}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, f"Erreur build: {e}", fail_reason=FailReason.BUILD_ERROR
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur build: {e}")
-                        continue
-
-                    # CHECKPOINT après le build, avant le scan (potentiellement long lui aussi, cf. timeout Trivy)
-                    if is_cancelled():
-                        log(f"  [ANNULÉ] Arrêt après build pour {container_name}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé après build")
-                        db.commit()
-                        break
-
-                    # Étape 5: Trivy (scan vulnérabilités)
-                    log(f"  [5/5] Analyse des vulnérabilités (Trivy)...")
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.SCANNING, f"Scan Trivy pour {container_name}")
-                    try:
-                        trivy_result = scan_image(build_result, skip_security_gate=SKIP_SECURITY_GATE_FOR_TEST)
-                        ProjectService.save_component_scan_results(db, component.id, trivy_result=trivy_result)
-                    except Exception as e:
-                        log(f"         Erreur scan vulnérabilités: {e}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, f"Erreur scan vulnérabilités: {e}", fail_reason=FailReason.SCAN_ERROR
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur scan: {e}")
-                        continue
-                    if trivy_result["blocking"]:
-                        crit_vulns = trivy_result["critical_vulnerabilities"]
-                        log(f"         {len(crit_vulns)} faille(s) critique(s) détectée(s) - déploiement bloqué")
-                        ProjectService.mark_component_failed(
-                            db, component.id,
-                            f"Déploiement bloqué : {len(crit_vulns)} faille(s) critique(s) détectée(s)",
-                            fail_reason=FailReason.VULNERABILITY,
-                            vulnerabilities=crit_vulns,
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Vulnérabilité critique détectée")
-                        continue
-                    log(f"        Scan de sécurité validé.")
-
-                    # CHECKPOINT juste avant de créer le conteneur — le plus important,
-                    # c'est celui qui évite le conflit de nom Docker au prochain retry.
-                    if is_cancelled():
-                        log(f"  [ANNULÉ] Arrêt avant déploiement du conteneur pour {container_name}")
-                        ProjectService.mark_component_failed(
-                            db, component.id, "Build annulé par l'utilisateur", fail_reason=FailReason.OTHER
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Annulé avant déploiement")
-                        db.commit()
-                        break
-
-                    # Étape 6: Déploiement du conteneur
-                    extra_nets = [settings.APP_NETWORK] if comp_payload.get("expose_publicly") else None
-
-                    plain_envs = {}
-                    if comp_payload["kind"] == ComponentKind.BACK and db_component is not None:
-                        db_container_name = f"{slug}-{db_component.name}"
-                        #plain_envs["DATABASE_URL"] = (
-                        #    f"postgres://{db_component.db_user}:{db_component.db_password}"
-                        #    f"@{db_container_name}:5432/{db_component.db_name}"
-                        #)
-                        plain_envs["DB_URL"] = (
-                            f"pgsql://{db_component.db_user}:{db_component.db_password}"
-                            f"@{db_container_name}:5432/{db_component.db_name}"
-                        )
-                        log(f"  [INFO] Injection auto de DATABASE_URL vers {db_container_name}")
-                        
-                            # --- Ajout : FRONTEND_URL pour le CORS du back ---
-                        front_comp = next((c for c in components if c["kind"] == ComponentKind.FRONT), None)
-                        if front_comp:
-                            front_container_name = f"{slug}-{front_comp['name']}-1"
-                            plain_envs["FRONTEND_URL"] = f"http://{front_container_name}.localhost:8080"
-                            log(f"  [INFO] Injection auto de FRONTEND_URL={plain_envs['FRONTEND_URL']}")
-
-                    log(f"  [DEPLOY] Démarrage du conteneur (port: {comp_payload['port']}, expose: {comp_payload.get('expose_publicly', False)})...")
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.DEPLOYING, f"Déploiement de {container_name}")
-                    try:
-                        container_ids = scale_project(
-                            build_result,
-                            slug=container_name,
-                            network=project_network,
-                            desired_replicas=comp_payload.get("replica", 1),
-                            envs_var=comp_payload.get("envs_var"),
-                            extra_networks=extra_nets,
-                            port=comp_payload["port"],
-                            plain_envs_var=plain_envs,
-                            expose_traefik=comp_payload.get("expose_publicly", False),
-                        )
-
-                        ProjectService.finalize_component_success(
-                            db, component.id, container_ids=container_ids, commit_hash=clone_result["commit_hash"]
-                        )
-                        log(f"  [DEPLOY]  Composant {container_name} démarré avec succès\n")
-                    except Exception as e:
-                        log(f"  [DEPLOY]  Erreur déploiement: {e}")
-                        log(traceback.format_exc())
-                        ProjectService.mark_component_failed(
-                            db, component.id, f"Erreur déploiement: {e}", fail_reason=FailReason.DEPLOY_ERROR
-                        )
-                        _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur déploiement: {e}")
 
                 # Statut global du Project parent
 
@@ -660,17 +418,17 @@ class DeployService:
                             all_container_ids.extend(c.container_ids)
                     if all_container_ids:
                         cleanup_project_resources(slug, all_container_ids)
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Stack annulée et nettoyée")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, "Stack annulée et nettoyée")
 
                 elif all_components and all(c.status == ProjectStatus.RUNNING for c in all_components):
                     ProjectService.update_project_status(db, project_id, ProjectStatus.RUNNING)
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.SUCCESS, "Stack entièrement déployée et RUNNING")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.SUCCESS, "Stack entièrement déployée et RUNNING")
                     log(f"[INFO]  STACK ENTIÈREMENT DÉPLOYÉE ET RUNNING")
                 elif any(c.status == ProjectStatus.FAILED for c in all_components):
                     ProjectService.update_project_status(db, project_id, ProjectStatus.FAILED)
                     failed_count = sum(1 for c in all_components if c.status == ProjectStatus.FAILED)
-                    _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Stack partiellement en échec ({failed_count} composants)")
-                    log(f"[INFO]   STACK PARTIELLEMENT EN ÉCHEC ({failed_count}/{len(all_components)} composants failed)")
+                    update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Stack partiellement en échec ({failed_count} composants)")
+                    log(f"[INFO]  STACK PARTIELLEMENT EN ÉCHEC ({failed_count}/{len(all_components)} composants failed)")
                 else:
                     log(f"[INFO] Statut stack mis à jour.")
 
@@ -687,7 +445,7 @@ class DeployService:
                     if not is_superseded():
                         ProjectService.update_project_status(db, project_id, ProjectStatus.FAILED)
                         if history_run_id:
-                            _update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur critique: {e}")
+                            update_pipeline_run(db, history_run_id, PipelineStatus.FAILED, f"Erreur critique: {e}")
                         db.commit()
                 except Exception as rollback_error:
                     log(f"Impossible de mettre à jour le statut FAILED après erreur: {rollback_error}")
